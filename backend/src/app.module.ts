@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import configuration from './config/configuration';
 import db_configuration from './config/database.configuration';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ProjectModule } from './modules/projects.module';
 
 @Module({
   imports: [
@@ -17,7 +18,8 @@ import { MongooseModule } from '@nestjs/mongoose';
       useFactory: async (config: ConfigService) => ({
         uri: config.get<string>('mongo_uri'), // Accessing mongolink from configuration
       }),
-    })
+    }),
+    ProjectModule
   ],
   controllers: [AppController],
   providers: [AppService],
