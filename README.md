@@ -80,3 +80,28 @@ $ npm run test:e2e
 # test coverage
 $ npm run test:cov
 ``` -->
+
+# Frontend (client-side)
+
+```bash
+$ cd frontend
+```
+
+## Installation
+
+```bash
+$ npm install
+```
+
+## Running the client-side app
+
+```bash
+# development
+$ npm run start
+
+# production build
+$ npm run build
+```
+
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser.

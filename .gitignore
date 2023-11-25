@@ -1,8 +1,11 @@
 # compiled output
 dist
-node_modules
 
-.env
+# production
+build
+
+# package modules
+node_modules
 
 package-lock.json
 
@@ -15,12 +18,9 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-# OS
-.DS_Store
-
 # Tests
-/coverage
-/.nyc_output
+coverage
+.nyc_output
 
 # IDEs and editors
 /.idea
@@ -37,3 +37,16 @@ lerna-debug.log*
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+
+# dependencies
+.pnp
+.pnp.js
+
+# misc
+.env
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
