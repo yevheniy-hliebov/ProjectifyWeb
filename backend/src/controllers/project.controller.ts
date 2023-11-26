@@ -18,12 +18,12 @@ export class ProjectController {
   }
 
   @Post()
-  async create(@Body() projectData): Promise<Project> {
+  async create(@Body() projectData): Promise<any> {
     return this.projectService.create(projectData);
   }
 
   @Put(':slug')
-  async update(@Param('slug') slug: string, @Body() projectData: ProjectData): Promise<Project> {
+  async update(@Param('slug') slug: string, @Body() projectData: ProjectData): Promise<any> {
     const id = await this.projectService.findIdBySlug(slug);
     return this.projectService.update(id, projectData);
   }

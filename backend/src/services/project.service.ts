@@ -9,14 +9,15 @@ import slugify from 'slugify';
 export class ProjectService {
   constructor(@InjectModel(Project.name) private readonly projectModel: Model<Project>) { }
 
-  async create(projectData: ProjectData): Promise<Project> {
+  async create(projectData: ProjectData) {
     const { name, description } = projectData;
 
-    const existingProject = await this.projectModel.findOne({ slug: nameSlugify(name) }).exec();
+    const existingProject = await this.projectModel.findOne({ slug: this.nameSlugify(name) }).exec();
 
-    ProjectValidation(name, existingProject ? true : false, description);
+    const validationError = this.ProjectValidation(name, existingProject ? true : false, description);
+    if (validationError) return validationError;
 
-    projectData.slug = nameSlugify(name);
+    projectData.slug = this.nameSlugify(name);
     const project = new this.projectModel(projectData)
 
     const savedProject = await project.save();
@@ -72,47 +73,54 @@ export class ProjectService {
     return await this.projectModel.find(searchQuery).sort(sortQuery).select({ _id: 0, __v: 0 }).exec();
   }
 
-  async update(id: string, projectData: ProjectData): Promise<Project> {
-    const { name, description } = projectData;    
+  async update(id: string, projectData: ProjectData) {
+    const { name, description } = projectData;
 
-    const existingProject = await this.projectModel.findOne({ slug: nameSlugify(name) }).exec();
+    const existingProject = await this.projectModel.findOne({ slug: this.nameSlugify(name) }).exec();
+    const validationError = this.ProjectValidation(name, existingProject ? true : false, description);
+    if (validationError) return validationError;
 
-    ProjectValidation(name, existingProject ? true : false, description);
-    projectData.slug = nameSlugify(name);
-
+    projectData.slug = this.nameSlugify(name);
     return await this.projectModel.findByIdAndUpdate(id, projectData, { new: true }).select({ _id: 0, __v: 0 }).exec();
   }
 
   async delete(id: string): Promise<Project> {
     return await this.projectModel.findByIdAndDelete(id).select({ _id: 0, __v: 0 }).exec();
   }
-}
 
-function nameSlugify (name: string) {
-  return slugify(name, {
-    replacement: '-',  // replace spaces with replacement character, defaults to `-`
-    remove: undefined, // remove characters that match regex, defaults to `undefined`
-    lower: true,      // convert to lower case, defaults to `false`
-    strict: false,     // strip special characters except replacement, defaults to `false`
-    locale: 'vi',      // language code of the locale to use
-    trim: true         // trim leading and trailing replacement chars, defaults to `true`
-  })
-} 
+  private ProjectValidation(name: string, isExistingProject: boolean, description: string) {
+    const errors = {
+      name: '',
+      description: ''
+    };
 
-function ProjectValidation(name: string, isExistingName: boolean, description: string) {
-  if (isExistingName) {
-    throw new ConflictException('A project with this name already exists');
+    if (isExistingProject) {
+      errors['name'] = 'A project with this slug already exists';
+    }
+    if (name.length < 3) {
+      errors['name'] = 'The name of the project is less than 3 characters';
+    }
+    if (name.length > 50) {
+      errors['name'] = 'The name of the project is longer than 50 characters';
+    }
+    if (name.length === 0 || name === null || name === undefined) {
+      errors['name'] = 'The name of the project is required';
+    }
+    if (description.length > 1500) {
+      errors['description'] = 'The description of the project is longer than 1500 characters';
+    }
+    
+    return (!errors.name && !errors.description) ? null : { error: errors };
   }
-  if (name.length < 3) {
-    throw new ConflictException('The name of the project is less than 3 characters');
-  }
-  if (name.length > 50) {
-    throw new ConflictException('The name of the project is longer than 50 characters');
-  }
-  if (name.length == 0 || name == null || name == undefined) {
-    throw new ConflictException('The name of the project is required');
-  }
-  if (name.length > 1500) {
-    throw new ConflictException('The description of the project is longer than 1500 characters');
+
+  private nameSlugify(name: string) {
+    return slugify(name, {
+      replacement: '-',  // replace spaces with replacement character, defaults to `-`
+      remove: undefined, // remove characters that match regex, defaults to `undefined`
+      lower: true,      // convert to lower case, defaults to `false`
+      strict: false,     // strip special characters except replacement, defaults to `false`
+      locale: 'vi',      // language code of the locale to use
+      trim: true         // trim leading and trailing replacement chars, defaults to `true`
+    })
   }
 }
