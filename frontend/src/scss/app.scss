@@ -28,14 +28,14 @@
     }
 
     &_green {
-        @apply bg-green-500;
+        @apply bg-green-600;
 
         &:hover {
-            @apply bg-green-400;
+            @apply bg-green-500;
         }
 
         &:active {
-            @apply bg-green-600;
+            @apply bg-green-700;
         }
     }
 

@@ -34,7 +34,7 @@ function ProjectItem({ projectData, onDelete }) {
       </div>
 
       <div className="project-actions flex gap-[10px]">
-        <BtnLink href={`/projects/edit/${projectData.slug}`} color='gray'>Edit</BtnLink>
+        <BtnLink href={`/projects/${projectData.slug}/edit`} color='gray'>Edit</BtnLink>
         <Button color='red' onClick={handleDelete}>Delete</Button>
       </div>
     </div>

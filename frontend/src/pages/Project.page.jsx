@@ -32,7 +32,7 @@ function Project() {
   }
 
   return (
-    <div className='wrapper'>
+    <div className='wrapper w-full min-h-screen bg-gray-50'>
       <Header h1_text={'Read project'} btn_link={{ href: '/', color: 'gray', children: 'Back to Home' }} />
       <div className="main">
         <Container>
@@ -53,7 +53,7 @@ function Project() {
                   <div className="grow shrink basis-0 text-gray-900 text-base font-normal leading-tight">{formatDate(project.updated_at, 'dd.MM.yyyy (HH:mm) ')}</div>
                 </div>
               )}
-              <div className="justify-start items-start gap-2.5 inline-flex">
+              <div className="flex justify-end items-center gap-[10px]">
                 <BtnLink href={`/projects/edit/${project.slug}`} color='gray'>Edit</BtnLink>
                 <Button color='red' onClick={handleDelete}>Delete</Button>
               </div>

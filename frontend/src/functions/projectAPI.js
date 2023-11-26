@@ -25,6 +25,26 @@ export async function getProject(slug) {
   }
 }
 
+export async function createProject(projectData) {
+    try {
+    const response = await axios.post('/projects', projectData);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching project:', error);
+    throw error;
+  }
+}
+
+export async function updateProject(slug, projectData) {
+    try {
+    const response = await axios.put('/projects/' + slug, projectData);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching project:', error);
+    throw error;
+  }
+}
+
 export async function deleteProject(slug) {
   try {
     const res = await axios.delete('/projects/' + slug);

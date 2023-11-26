@@ -12,9 +12,9 @@ export function BtnLink({ href, color, children }) {
   )
 }
 
-export function Button({ color, onClick, children }) {
+export function Button({ color, onClick, type = 'button', children }) {
   return (
-    <button onClick={onClick} className={`${baseClassName} btn_${color}`}>
+    <button onClick={onClick} type={type} className={`${baseClassName} btn_${color}`}>
       {children}
     </button>
   )
