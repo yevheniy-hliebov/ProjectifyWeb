@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { BtnLink, Button } from '../components/Button.component';
 import { deleteProject, getProject } from '../functions/projectAPI';
 import { formatDate } from '../functions/formatDate';
+import Header from '../components/Header.compnent';
+import Container from '../components/Container.component';
 
 function Project() {
   const { slug } = useParams();
@@ -31,17 +33,12 @@ function Project() {
 
   return (
     <div className='wrapper'>
-      <div className="header py-[25px]">
-        <div className="container max-w-[1440px] mx-auto px-[15px] flex justify-between items-center flex-wrap gap-[20px]">
-          <h1 className="grow shrink basis-0 text-gray-900 text-[38px] max-sm:text-[30px] font-bold leading-[44px] whitespace-nowrap">Read project</h1>
-          <BtnLink href='/' color={'gray'}>Back to Home</BtnLink>
-        </div>
-      </div>
+      <Header h1_text={'Read project'} btn_link={{ href: '/', color: 'gray', children: 'Back to Home' }} />
       <div className="main">
-        <div className="container max-w-[1440px] mx-auto px-[15px]">
+        <Container>
           {project ? (
             <div className="w-full p-[15px] max-sm:px-0 flex-col justify-start items-end gap-5 inline-flex">
-              <div className="self-stretch text-gray-900 text-[32px] font-bold leading-9">{project.name}</div>
+              <h2 className="self-stretch text-gray-900 text-[32px] font-bold leading-9">{project.name}</h2>
               <div className="self-stretch flex-col justify-start items-start gap-2.5 flex">
                 <div className="text-gray-900 text-base font-bold leading-tight">Description:</div>
                 <div className="self-stretch text-justify text-gray-900 text-base font-normal leading-tight">{project.description}</div>
@@ -64,7 +61,7 @@ function Project() {
           ) : (
             <p>LOADING...</p>
           )}
-        </div>
+        </Container>
       </div>
     </div>
   )
