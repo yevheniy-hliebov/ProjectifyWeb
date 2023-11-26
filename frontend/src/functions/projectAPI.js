@@ -15,6 +15,16 @@ export async function getProjects(searchText = '', sortBy = '') {
   }
 }
 
+export async function getProject(slug) {
+    try {
+    const response = await axios.get('/projects/' + slug);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching project:', error);
+    throw error;
+  }
+}
+
 export async function deleteProject(slug) {
   try {
     const res = await axios.delete('/projects/' + slug);
