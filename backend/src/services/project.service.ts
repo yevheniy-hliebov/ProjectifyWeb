@@ -81,6 +81,7 @@ export class ProjectService {
     if (validationError) return validationError;
 
     projectData.slug = this.nameSlugify(name);
+    projectData.updated_at = new Date();
     return await this.projectModel.findByIdAndUpdate(id, projectData, { new: true }).select({ _id: 0, __v: 0 }).exec();
   }
 

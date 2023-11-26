@@ -54,7 +54,7 @@ function Project() {
                 </div>
               )}
               <div className="flex justify-end items-center gap-[10px]">
-                <BtnLink href={`/projects/edit/${project.slug}`} color='gray'>Edit</BtnLink>
+                <BtnLink href={`/projects/${project.slug}/edit`} color='gray'>Edit</BtnLink>
                 <Button color='red' onClick={handleDelete}>Delete</Button>
               </div>
             </div>

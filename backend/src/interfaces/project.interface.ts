@@ -1,7 +1,7 @@
 export interface ProjectData {
     name: string,
     description?: string,
-    created?: Date,
-    updated?: Date,
+    created_at?: Date,
+    updated_at?: Date,
     slug?: string
 }
