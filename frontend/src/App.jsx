@@ -1,9 +1,9 @@
 import './scss/app.scss'
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home.page';
-import Project from './pages/Project.page';
-import CreateProject from './pages/CreateProject.page';
-import EditProject from './pages/EditProject.page';
+import Home from './pages/Home';
+import Project from './pages/Project';
+import CreateProject from './pages/CreateProject';
+import EditProject from './pages/EditProject';
 
 import axios from 'axios';
 axios.defaults.baseURL = "http://localhost:4000"

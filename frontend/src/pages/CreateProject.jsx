@@ -1,6 +1,6 @@
 import React from 'react'
-import Header from '../components/Header.compnent'
-import FormProject from '../components/FormProject.component'
+import Header from '../components/Header'
+import FormProject from '../components/FormProject'
 
 function CreateProject() {
   return (

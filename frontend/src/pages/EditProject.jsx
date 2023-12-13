@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import Header from '../components/Header.compnent'
-import FormProject from '../components/FormProject.component'
+import Header from '../components/Header'
+import FormProject from '../components/FormProject'
 import { useParams } from 'react-router-dom';
 import { getProject } from '../functions/projectAPI';
 

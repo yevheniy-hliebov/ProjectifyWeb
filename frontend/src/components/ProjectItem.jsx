@@ -1,5 +1,5 @@
 import React from 'react'
-import { BtnLink, Button } from './Button.component'
+import Button from './Button'
 import { formatDate } from '../functions/formatDate'
 import { deleteProject } from '../functions/projectAPI'
 
@@ -34,7 +34,7 @@ function ProjectItem({ projectData, onDelete }) {
       </div>
 
       <div className="project-actions flex gap-[10px]">
-        <BtnLink href={`/projects/${projectData.slug}/edit`} color='gray'>Edit</BtnLink>
+        <Button link={`/projects/${projectData.slug}/edit`} color='gray'>Edit</Button>
         <Button color='red' onClick={handleDelete}>Delete</Button>
       </div>
     </div>

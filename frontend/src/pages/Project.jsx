@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom';
-import { BtnLink, Button } from '../components/Button.component';
+import Button from '../components/Button';
 import { deleteProject, getProject } from '../functions/projectAPI';
 import { formatDate } from '../functions/formatDate';
-import Header from '../components/Header.compnent';
-import Container from '../components/Container.component';
+import Header from '../components/Header';
+import Container from '../components/Container';
 
 function Project() {
   const { slug } = useParams();
@@ -33,7 +33,7 @@ function Project() {
 
   return (
     <div className='wrapper w-full min-h-screen bg-gray-50'>
-      <Header h1_text={'Read project'} btn_link={{ href: '/', color: 'gray', children: 'Back to Home' }} />
+      <Header h1_text={'Read project'} btn_link={{ link: '/', color: 'gray', children: 'Back to Home' }} />
       <div className="main">
         <Container>
           {project ? (
@@ -54,7 +54,7 @@ function Project() {
                 </div>
               )}
               <div className="flex justify-end items-center gap-[10px]">
-                <BtnLink href={`/projects/${project.slug}/edit`} color='gray'>Edit</BtnLink>
+                <Button link={`/projects/${project.slug}/edit`} color='gray'>Edit</Button>
                 <Button color='red' onClick={handleDelete}>Delete</Button>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import Container from './Container.component'
-import { BtnLink, Button } from './Button.component'
+import Container from './Container'
+import Button from './Button'
 import slugify from '../functions/slugify'
 import { validationProjectData } from '../functions/validation'
 import { createProject, updateProject } from '../functions/projectAPI'
@@ -38,7 +38,6 @@ function FormProject({ projectData = null, isUpdateAction = false }) {
         } else {
           respose = await updateProject(projectData.slug, formData);
         }
-        console.log(respose);
         if ('error' in respose) {
           setErrors(respose.error);
         } else {
@@ -103,7 +102,7 @@ function FormProject({ projectData = null, isUpdateAction = false }) {
         </div>
 
         <div className="flex justify-end items-center gap-[10px]">
-          <BtnLink href='/' color='gray'>Cancel</BtnLink>
+          <Button link='/' color='gray'>Cancel</Button>
           <Button color='green' type='submit'>{ !isUpdateAction ? 'Create' : 'Save' }</Button>
         </div>
       </form>

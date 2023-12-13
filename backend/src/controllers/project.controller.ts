@@ -29,7 +29,7 @@ export class ProjectController {
   }
   
   @Delete(':slug')
-  async delete(@Param('slug') slug: string): Promise<Project> {
+  async delete(@Param('slug') slug: string) {
     const id = await this.projectService.findIdBySlug(slug);
     return this.projectService.delete(id);
   }

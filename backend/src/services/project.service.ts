@@ -85,7 +85,7 @@ export class ProjectService {
     return await this.projectModel.findByIdAndUpdate(id, projectData, { new: true }).select({ _id: 0, __v: 0 }).exec();
   }
 
-  async delete(id: string): Promise<Project> {
+  async delete(id: string) {
     return await this.projectModel.findByIdAndDelete(id).select({ _id: 0, __v: 0 }).exec();
   }
 
