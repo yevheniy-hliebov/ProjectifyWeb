@@ -9,14 +9,13 @@ function EditProject() {
   const [project, setProject] = useState(null)
 
   useEffect(() => {
-    getProject(slug)
-      .then(project => {
-        setProject(project)
+    getProject(slug).then(response => {
+      if (response.status === 200) setProject(response.data)
+      if (response.status === 404) window.location.replace('/project-not-found')
       })
-      .catch(error => {
-        console.error('Error fetching projects:', error);
-      });
   }, [slug])
+
+  if (!project) return;
 
   return (
     <div className='wrapper w-full min-h-screen bg-gray-50'>

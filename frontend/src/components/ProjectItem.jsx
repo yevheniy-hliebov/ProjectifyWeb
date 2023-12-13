@@ -6,12 +6,9 @@ import { deleteProject } from '../functions/projectAPI'
 function ProjectItem({ projectData, onDelete }) {
   const handleDelete  = async (e) => {
     e.preventDefault();
-    try {
-      await deleteProject(projectData.slug);
-      setTimeout(onDelete, 500);
-    } catch (error) {
-      console.error('Error deleting project:', error);
-    }
+    deleteProject(projectData.slug).then(response => {
+      if(response.status === 204) setTimeout(onDelete, 500);
+    })
   }
 
   return (

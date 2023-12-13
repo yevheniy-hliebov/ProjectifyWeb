@@ -4,6 +4,8 @@ import Home from './pages/Home';
 import Project from './pages/Project';
 import CreateProject from './pages/CreateProject';
 import EditProject from './pages/EditProject';
+import NotFound from './pages/NotFound';
+import NotFoundProject from './pages/NotFoundProject';
 
 import axios from 'axios';
 axios.defaults.baseURL = "http://localhost:4000"
@@ -17,6 +19,8 @@ function App() {
         <Route path='/projects/:slug' element={<Project />} />
         <Route path='/project/create' element={<CreateProject />} />
         <Route path='/projects/:slug/edit' element={<EditProject />} />
+        <Route path="/project-not-found" element={<NotFoundProject />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

@@ -9,14 +9,13 @@ function Home() {
   const [sortBy, setSortBy] = useState('newest')
   const [searchText, setSearchText] = useState('')
 
-  function getAndSetProjects(searchText = '', sortBy = '') {
+  async function getAndSetProjects(searchText = '', sortBy = '') {
     getProjects(searchText, sortBy)
-      .then(projects => {
-        setProjects(projects)
+      .then(response => {
+        if (response.status === 200)
+          setProjects(response.data)
+        else setProjects([])
       })
-      .catch(error => {
-        console.error('Error fetching projects:', error);
-      });
   }
 
   useEffect(() => {
@@ -54,6 +53,7 @@ function Home() {
         <div className="section">
           <Container>
             <div className="flex flex-col">
+              { (projects.length === 0) && <div className="mx-auto my-3 text-2xl text-gray-500">Projects not found</div> }
               {projects.map(project => {
                 return (
                   <ProjectItem key={project.slug} projectData={project} onDelete={() => { getAndSetProjects(searchText, sortBy) }} />

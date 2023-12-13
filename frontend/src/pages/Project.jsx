@@ -11,25 +11,20 @@ function Project() {
   const [project, setProject] = useState(null)
 
   useEffect(() => {
-    getProject(slug)
-      .then(project => {
-        setProject(project)
-      })
-      .catch(error => {
-        console.error('Error fetching projects:', error);
-      });
+    getProject(slug).then(response => {
+      if (response.status === 200) setProject(response.data)
+      if (response.status === 404) window.location.replace('/project-not-found')
+    })
   }, [slug])
 
   const handleDelete = async (e) => {
     e.preventDefault();
-    try {
-      const deletedProoject = await deleteProject(project.slug);
-      if (deletedProoject)
-        window.location.href = '/';
-    } catch (error) {
-      console.error('Error deleting project:', error);
-    }
+    deleteProject(project.slug).then(response => {
+      if (response.status === 204)  window.location.replace('/')
+    })
   }
+
+  if (!project) return;
 
   return (
     <div className='wrapper w-full min-h-screen bg-gray-50'>

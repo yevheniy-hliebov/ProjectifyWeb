@@ -32,17 +32,18 @@ function FormProject({ projectData = null, isUpdateAction = false }) {
       const errorsValidate = validationProjectData(formData);
       setErrors(errorsValidate);
       if (!errorsValidate.name && !errorsValidate.description) {
-        let respose;
-        if (!isUpdateAction) {
-          respose = await createProject(formData);
+        let response;
+        if (!isUpdateAction) response = await createProject(formData);
+        else response = await updateProject(projectData.slug, formData);
+        if (response.status === 201 || response.status === 200) {
+          window.location.replace('/projects/' + response.data.slug);
         } else {
-          respose = await updateProject(projectData.slug, formData);
-        }
-        if ('error' in respose) {
-          setErrors(respose.error);
-        } else {
-          const project = respose;
-          window.location.href = '/projects/' + project.slug;
+          response.data.errors.forEach(error => {
+            setErrors({
+              ...errors,
+              [`${error.field}`]: error.message
+            })
+          });
         }
       }
     }
@@ -103,7 +104,7 @@ function FormProject({ projectData = null, isUpdateAction = false }) {
 
         <div className="flex justify-end items-center gap-[10px]">
           <Button link='/' color='gray'>Cancel</Button>
-          <Button color='green' type='submit'>{ !isUpdateAction ? 'Create' : 'Save' }</Button>
+          <Button color='green' type='submit'>{!isUpdateAction ? 'Create' : 'Save'}</Button>
         </div>
       </form>
     </Container>
