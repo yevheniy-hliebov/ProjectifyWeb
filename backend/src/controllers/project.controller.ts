@@ -25,7 +25,7 @@ export class ProjectController {
   @Put(':slug')
   async update(@Param('slug') slug: string, @Body() projectData: ProjectData): Promise<any> {
     const id = await this.projectService.findIdBySlug(slug);
-    return this.projectService.update(id, projectData);
+    return this.projectService.update(id, slug, projectData);
   }
   
   @Delete(':slug')

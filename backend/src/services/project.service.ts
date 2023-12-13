@@ -12,18 +12,19 @@ export class ProjectService {
   async create(projectData: ProjectData) {
     const { name, description } = projectData;
 
-    const existingProject = await this.projectModel.findOne({ slug: this.nameSlugify(name) }).exec();
+    const slugName = this.nameSlugify(name)
 
-    const validationError = this.ProjectValidation(name, existingProject ? true : false, description);
+    const existingProject = await this.projectModel.findOne({ slug: slugName }).exec();
+    const hasSlugConflict = existingProject;
+    const validationError = this.ProjectValidation(name, hasSlugConflict, description);
     if (validationError) return validationError;
 
-    projectData.slug = this.nameSlugify(name);
-    const project = new this.projectModel(projectData)
-
-    const savedProject = await project.save();
+    projectData.slug = slugName;
+    const savedProject = await this.projectModel.create(projectData);
 
     return await this.projectModel.findById(savedProject._id).select({ _id: 0, __v: 0 }).exec();
   }
+
 
   async findOne(name: string): Promise<Project> {
     return await this.projectModel.findOne({ name }).select({ _id: 0, __v: 0 }).exec()
@@ -73,23 +74,27 @@ export class ProjectService {
     return await this.projectModel.find(searchQuery).sort(sortQuery).select({ _id: 0, __v: 0 }).exec();
   }
 
-  async update(id: string, projectData: ProjectData) {
+  async update(id: string, oldSlug: string, projectData: ProjectData) {
     const { name, description } = projectData;
+    const newSlug = this.nameSlugify(name);
 
-    const existingProject = await this.projectModel.findOne({ slug: this.nameSlugify(name) }).exec();
-    const validationError = this.ProjectValidation(name, existingProject ? true : false, description);
+    const existingProject = await this.projectModel.findOne({ slug: newSlug }).exec();
+    const hasSlugConflict = oldSlug !== newSlug && existingProject;
+    const validationError = this.ProjectValidation(name, hasSlugConflict, description);
     if (validationError) return validationError;
-
-    projectData.slug = this.nameSlugify(name);
+    
+    if (oldSlug !== newSlug) projectData.slug = newSlug;
     projectData.updated_at = new Date();
-    return await this.projectModel.findByIdAndUpdate(id, projectData, { new: true }).select({ _id: 0, __v: 0 }).exec();
+    return await this.projectModel
+      .findByIdAndUpdate(id, projectData, { new: true, select: { _id: 0, __v: 0 } })
+      .exec();
   }
 
   async delete(id: string) {
     return await this.projectModel.findByIdAndDelete(id).select({ _id: 0, __v: 0 }).exec();
   }
 
-  private ProjectValidation(name: string, isExistingProject: boolean, description: string) {
+  private ProjectValidation(name: string, isExistingProject, description: string) {
     const errors = {
       name: '',
       description: ''
@@ -110,7 +115,7 @@ export class ProjectService {
     if (description.length > 1500) {
       errors['description'] = 'The description of the project is longer than 1500 characters';
     }
-    
+
     return (!errors.name && !errors.description) ? null : { error: errors };
   }
 
