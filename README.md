@@ -20,6 +20,20 @@ Develop a fully functional web application for project management, enabling user
 - Set up Nest.js/Express.js server and connect to MongoDB.
 - Implement CRUD operations for the Project model.
 
+## Intermediate Level:
+
+_Prerequisite: Completion of the Basic Level_
+
+**Client-Side:** 
+- Add the ability to view project details and a list of tasks within each project.
+- Implement the ability to add, edit, and delete tasks.
+- Add notifications for the user upon successful or unsuccessful operation.  
+   
+**Server-side:**
+- Develop the Task model and implement CRUD operations.
+- Add authentication and authorization using JWT.
+- Add a middleware for error handling and logging.
+
 # Backend (server-side)
 
 ```bash
