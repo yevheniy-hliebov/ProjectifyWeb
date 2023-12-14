@@ -1,4 +1,4 @@
-import { ConflictException, HttpException, Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Project } from '../schemas/project.schema';
@@ -6,7 +6,7 @@ import { ProjectData } from 'src/interfaces/project.interface';
 import slugify from 'slugify';
 
 @Injectable()
-export class ProjectService {
+export class ProjectsService {
   constructor(@InjectModel(Project.name) private readonly projectModel: Model<Project>) { }
 
   async create(projectData: ProjectData): Promise<Project> {
