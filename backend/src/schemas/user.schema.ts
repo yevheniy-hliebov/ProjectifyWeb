@@ -5,9 +5,6 @@ export type UserDocument = HydratedDocument<User>;
 
 @Schema()
 export class User {
-    @Prop()
-    _id: string;
-
     @Prop({ unique: true, required: true, minlength: 3, maxlength: 40 })
     username: string;
 

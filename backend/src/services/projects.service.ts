@@ -1,15 +1,15 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Project } from '../schemas/project.schema';
+import { Project, ProjectDocument } from '../schemas/project.schema';
 import { ProjectData } from 'src/interfaces/project.interface';
 import slugify from 'slugify';
 
 @Injectable()
 export class ProjectsService {
-  constructor(@InjectModel(Project.name) private readonly projectModel: Model<Project>) { }
+  constructor(@InjectModel(Project.name) private readonly projectModel: Model<ProjectDocument>) { }
 
-  async create(projectData: ProjectData): Promise<Project> {
+  async create(projectData: ProjectData): Promise<ProjectDocument> {
     const { name, description } = projectData;
 
     if (!name) {
@@ -28,7 +28,7 @@ export class ProjectsService {
   }
 
 
-  async findOne(name: string): Promise<Project> {
+  async findOne(name: string): Promise<ProjectDocument> {
     const project = await this.projectModel.findOne({ name }).select({ _id: 0, __v: 0 }).exec()
     if (!project) {
       throw new HttpException('Project not found', 404);
@@ -36,7 +36,7 @@ export class ProjectsService {
     return project;
   }
 
-  async findBySlug(slug: string): Promise<Project> {
+  async findBySlug(slug: string): Promise<ProjectDocument> {
     const project = await this.projectModel.findOne({ slug }).select({ _id: 0, __v: 0 }).exec()
     if (!project) {
       throw new HttpException('Project not found', 404);
@@ -52,7 +52,7 @@ export class ProjectsService {
     return project._id.toString();
   }
 
-  async findById(id: string): Promise<Project> {
+  async findById(id: string): Promise<ProjectDocument> {
     const project = await this.projectModel.findById(id).exec()
     if (!project) {
       throw new HttpException('Project not found', 404);

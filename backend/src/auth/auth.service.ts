@@ -14,7 +14,7 @@ export class AuthService {
   async register(userData: UserData): Promise<any> {
     const createdUser = await this.usersService.create(userData);
 
-    const payload = { sub: createdUser._id, username: createdUser.username }
+    const payload = { sub: createdUser.id, username: createdUser.username }
 
     return {
       access_token: await this.jwtService.signAsync(payload),
@@ -31,7 +31,7 @@ export class AuthService {
       throw new HttpException('Password not correct', 400);
     }
 
-    const payload = { sub: user._id, username: user.username }
+    const payload = { sub: user.id, username: user.username }
 
     return {
       access_token: await this.jwtService.signAsync(payload),
