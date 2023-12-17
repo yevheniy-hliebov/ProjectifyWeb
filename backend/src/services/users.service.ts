@@ -9,7 +9,7 @@ import * as bcrypt from 'bcrypt';
 export class UsersService {
   constructor(@InjectModel(User.name) private readonly userModel: Model<UserDocument>) { }
 
-  async create(userData: UserData): Promise<UserDocument | undefined> {
+  async create(userData: UserData): Promise<UserDocument> {
     await this.validateUserData(userData);
 
     userData.password = await this.hashPassword(userData.password);
@@ -19,14 +19,51 @@ export class UsersService {
     return this.findById(createdUser.id);
   }
 
-  async findById(id: string): Promise<UserDocument | undefined> {
+  async findById(id: string): Promise<UserDocument> {
     const user = await this.userModel.findById(id).select({ __v: 0 }).exec();
     if (!user) throw new HttpException('User not found', 404)
     return user;
   }
 
-  async findOne(username: string): Promise<UserDocument | undefined> {
+  async findOne(username: string): Promise<UserDocument> {
     const user = await this.userModel.findOne({ username }).select({ __v: 0 }).exec();
+    if (!user) throw new HttpException('User not found', 404)
+    return user;
+  }
+
+  async update(id: string, userData: UserData): Promise<UserDocument> {
+    const oldUserData = await this.findById(id);
+
+    for (const key in userData) {
+      if (oldUserData[key] !== userData[key]) {
+        throw new HttpException('The data has not changed. No update required.', 400)
+      }
+    }
+
+    await this.validateUserData(userData);
+
+    userData.updated_at = new Date();
+    return await this.userModel
+      .findByIdAndUpdate(id, userData, { new: true, select: { __v: 0 } })
+      .exec();
+  }
+
+  async changePassword(id: string, password: string): Promise<UserDocument> {
+    const isValidPassword = validatePassword(password)
+    if (!isValidPassword) {
+      throw new HttpException('Invalid password', 400)
+    }
+
+    
+    const user = await this.findById(id);
+    user.password = await this.hashPassword(password);
+    return await this.userModel
+      .findByIdAndUpdate(id, user, { new: true, select: { __v: 0 } })
+      .exec();
+  }
+
+  async delete(id: string) {
+    const user = await this.userModel.findByIdAndDelete(id).select({ __v: 0 }).exec();
     if (!user) throw new HttpException('User not found', 404)
     return user;
   }
@@ -47,33 +84,38 @@ export class UsersService {
       username?: string,
       email?: string,
       password?: string,
-    } 
+    }
 
     let errors: ErrorsUserData = {};
-    
-    const isValidUsername = validateUsername(username)
-    if (!isValidUsername) {
-      errors.username = 'Invalid username';
+
+    if ('username' in userData) {
+      const isValidUsername = validateUsername(username)
+      if (!isValidUsername) {
+        errors.username = 'Invalid username';
+      }
+      const isUniqueUserName = await this.isUnique('username', username);
+      if (!isUniqueUserName) {
+        errors.username = 'The user with this username is registered';
+      }
     }
-    
-    const isUniqueUserName = await this.isUnique('username', username);
-    if (!isUniqueUserName) {
-      errors.username = 'The user with this username is registered';
+
+    if ('email' in userData) {
+      const isValidEmail = validateEmail(email)
+      if (!isValidEmail) {
+        errors.email = 'Invalid email';
+      }
+
+      const isUniqueEmail = await this.isUnique('email', email);
+      if (!isUniqueEmail) {
+        errors.email = 'The user with this email is registered';
+      }
     }
-    
-    const isValidEmail = validateEmail(email)
-    if (!isValidEmail) {
-      errors.email = 'Invalid email';
-    }
-    
-    const isUniqueEmail = await this.isUnique('email', email);
-    if (!isUniqueEmail) {
-      errors.email = 'The user with this email is registered';
-    }
-    
-    const isValidPassword = validatePassword(password)
-    if (!isValidPassword) {
-      errors.password = 'Invalid password';
+
+    if ('password' in userData) {
+      const isValidPassword = validatePassword(password)
+      if (!isValidPassword) {
+        errors.password = 'Invalid password';
+      }
     }
 
     if (Object.keys(errors).length > 0) {
