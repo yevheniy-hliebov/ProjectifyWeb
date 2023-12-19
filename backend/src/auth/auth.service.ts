@@ -1,6 +1,6 @@
-import { HttpException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserData } from 'src/interfaces/user.interface';
+import { UserDto } from 'src/interfaces/user.interface';
 import { UsersService } from 'src/services/users.service';
 import * as bcrypt from 'bcrypt';
 
@@ -11,14 +11,18 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  async register(userData: UserData): Promise<any> {
-    const createdUser = await this.usersService.create(userData);
+  async register(userDto: UserDto): Promise<any> {
+    const createdUser = await this.usersService.create(userDto);
 
-    const payload = { sub: createdUser.id, username: createdUser.username }
+    if (createdUser) {
+      const payload = { sub: createdUser.id, username: createdUser.username }
 
-    return {
-      access_token: await this.jwtService.signAsync(payload),
-    };
+      return {
+        access_token: await this.jwtService.signAsync(payload),
+      };
+    } else {
+      throw new HttpException('Failed to register', HttpStatus.BAD_REQUEST)
+    }
   }
 
   async login(username: string, password: string): Promise<any> {

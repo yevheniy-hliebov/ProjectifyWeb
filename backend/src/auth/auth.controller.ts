@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Request, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Public } from './auth.guard';
-import { UserData } from 'src/interfaces/user.interface';
+import { UserDto } from 'src/interfaces/user.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -10,8 +10,8 @@ export class AuthController {
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.OK)
-  register(@Body() userData: UserData) {
-    return this.authService.register(userData);
+  register(@Body() userDto: UserDto) {
+    return this.authService.register(userDto);
   }
 
   @Public()
