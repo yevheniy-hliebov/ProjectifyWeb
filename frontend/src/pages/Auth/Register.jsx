@@ -46,7 +46,6 @@ function Register() {
     setErrors(errs);
     if (errs.username === '' && errs.email === '' && errs.password === '') {
       const response = await register(user);
-      console.log(response);
       if (response.status === 201 || response.status === 200) {
         window.location.replace('/');
       } else {

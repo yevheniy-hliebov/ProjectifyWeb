@@ -27,12 +27,11 @@ export class AuthService {
 
   async login(username: string, password: string): Promise<any> {
     const user = await this.usersService.findOne(username);
-    if (!user) throw new HttpException('User not found', 404);
 
     const isMatchPassword = await bcrypt.compare(password, user.password) 
 
     if (!isMatchPassword) {
-      throw new HttpException('Password not correct', 400);
+      throw new HttpException('Password is incorrect', 400);
     }
 
     const payload = { sub: user.id, username: user.username }

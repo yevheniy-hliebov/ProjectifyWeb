@@ -10,15 +10,15 @@ export class AuthController {
 
   @Public()
   @Post('register')
-  @HttpCode(HttpStatus.OK)
   async register(@Body() userDto: UserDto, @Response() res: Res) {
     const token = await this.authService.register(userDto);    
     res.header('Authorization-Cookie', `access-token=Bearer ${token.access_token}; max-age=3600; secure=true; path=/`);
     return res.json('Authorized')
   }
-
+  
   @Public()
   @Post('login')
+  @HttpCode(HttpStatus.OK)
   async login(@Body() signInDto: Record<string, any>, @Response() res: Res) {
     const token = await this.authService.login(signInDto.username, signInDto.password);
     res.header('Authorization-Cookie', `access-token=Bearer ${token.access_token}; max-age=3600; secure=true; path=/`);
