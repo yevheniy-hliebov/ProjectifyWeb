@@ -14,17 +14,21 @@ export class UsersService {
     const { username, email, password } = userDto;
 
     // Check username/email uniqueness
-    const errors = await Promise.all([
+    const isUniqueFields = await Promise.all([
       this.isUnique('username', username),
       this.isUnique('email', email),
     ]);
-    if (errors.some((error) => error)) {
+    
+    if (!isUniqueFields.some((error) => error)) {
+      const errors: Record<string, string> = {}
+      if (!isUniqueFields[0]) errors.username = 'Username must be unique'
+      if (!isUniqueFields[1]) errors.email = 'Email must be unique'
       throw new HttpException({ message: 'Failed to create user', errors }, HttpStatus.BAD_REQUEST);
     }
 
     // Check validation
     const validationErrors = validate(userDto);
-    if (validationErrors.length > 0) {
+    if (Object.keys(validationErrors).length > 0) {
       throw new HttpException({ message: "Failed to create user", validationErrors }, HttpStatus.BAD_REQUEST)
     } else {
       // Hash password
@@ -65,17 +69,20 @@ export class UsersService {
     }
 
     // Check username/email uniqueness
-    const errors = await Promise.all([
+    const isUniqueFields = await Promise.all([
       username !== oldUserDto.username && this.isUnique('username', username),
       email !== oldUserDto.email && this.isUnique('email', email),
     ]);
-    if (errors.some((error) => error)) {
-      throw new HttpException({ message: 'Failed to update user', errors }, HttpStatus.BAD_REQUEST);
+    if (!isUniqueFields.some((error) => error)) {
+      const errors: Record<string, string> = {}
+      if (!isUniqueFields[0]) errors.username = 'Username must be unique'
+      if (!isUniqueFields[1]) errors.email = 'Email must be unique'
+      throw new HttpException({ message: 'Failed to create user', errors }, HttpStatus.BAD_REQUEST);
     }
 
     // Check validation
     const validationErrors = validate(userDto);
-    if (validationErrors.length > 0) {
+    if (Object.keys(validationErrors).length > 0) {
       throw new HttpException({ message: "Failed to update user", validationErrors }, HttpStatus.BAD_REQUEST)
     } else {
       // Hash password

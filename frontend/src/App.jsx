@@ -6,6 +6,7 @@ import CreateProject from './pages/CreateProject';
 import EditProject from './pages/EditProject';
 import NotFound from './pages/NotFound';
 import NotFoundProject from './pages/NotFoundProject';
+import Register from './pages/Auth/Register';
 
 import axios from 'axios';
 axios.defaults.baseURL = "http://localhost:4000"
@@ -21,6 +22,7 @@ function App() {
         <Route path='/projects/:slug/edit' element={<EditProject />} />
         <Route path="/project-not-found" element={<NotFoundProject />} />
         <Route path="*" element={<NotFound />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
     </BrowserRouter>
   );

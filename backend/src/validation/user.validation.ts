@@ -2,11 +2,11 @@ import { UserDto } from "src/interfaces/user.interface";
 
 export function validate(userDto: UserDto) {
   const { username, email, password } = userDto;
-  const errors = [];
+  const errors: Record<string, string> = {};
 
   // Validation username
   if (!username) {
-    errors.push({ username: "Username is empty" })
+    errors.username = "Username is empty";
   } else {
     let usernameError = '';
     if (username.length < 3) {
@@ -20,24 +20,24 @@ export function validate(userDto: UserDto) {
       usernameError = "Username may only contain alphanumeric characters or hyphens";
     }
     if (usernameError.length > 0) {
-      errors.push({ username: usernameError })
+      errors.username = usernameError;
     }
   }
 
   // Validation email
   if (!email) {
-    errors.push({ email: "Email is empty" })
+    errors.email = "Email is empty";
   } else {
     const emailRegex = /^[a-zA-Z0-9]+([-_.]?[a-zA-Z0-9]+)*[@]{1}[a-zA-Z0-9]+([-_]{1}[a-zA-Z0-9]+)*([.]{1}[a-zA-Z0-9]{2,})+$/;
     if (!emailRegex.test(email)) {
-      errors.push({ email: "The email is invalid. Please try again." })
+      errors.email = "The email is invalid. Please try again.";
     }
   }
 
   // Validation password
   let passwordError = validatePassword(password);
   if (passwordError.length > 0) {
-    errors.push({ password: passwordError })
+    errors.password = passwordError
   }
   return errors;
 }
