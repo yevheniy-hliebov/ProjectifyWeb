@@ -1,12 +1,13 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Request, Response, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Request, Response, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Public } from './auth.guard';
 import { UserDto } from 'src/interfaces/user.interface';
 import { Response as Res } from 'express';
+import { UsersService } from 'src/services/users.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) { }
+  constructor(private authService: AuthService, private userService: UsersService) { }
 
   @Public()
   @Post('register')
@@ -26,7 +27,10 @@ export class AuthController {
   }
 
   @Get('profile')
-  getProfile(@Request() req) {
-    return req.user;
+  async getProfile(@Request() req) {
+    const reqUser = req.user;
+    const user = await this.userService.findById(reqUser.sub);
+    if (!user) throw new UnauthorizedException();
+    return { id: user.id, username: user.username };
   }
 }

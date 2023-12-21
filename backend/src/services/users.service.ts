@@ -47,7 +47,6 @@ export class UsersService {
 
   async findById(id: string): Promise<UserDocument | undefined> {
     const user = await this.userModel.findById(id).select({ __v: 0 }).exec();
-    if (!user) throw new HttpException('User not found', 404)
     return user;
   }
 
@@ -60,6 +59,7 @@ export class UsersService {
   async update(id: string, userDto: UserDto): Promise<UserDocument | undefined> {
     const { username, email, password } = userDto;
     const oldUserDto = await this.findById(id);
+    if (!oldUserDto) throw new HttpException('User not found', 404)
 
     // Check changes
     for (const key in userDto) {

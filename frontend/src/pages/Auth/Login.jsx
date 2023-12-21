@@ -39,7 +39,7 @@ function Login() {
 
   return (
     <Container className='h-screen flex flex-col items-center justify-center'>
-      <div className="w-full max-w-[460px] p-[30px] bg-gray-100 rounded-[20px] flex-col justify-center items-center gap-2.5 inline-flex">
+      <div className="w-full max-w-[460px] p-[30px] bg-gray-100 shadow-[0_3px_10px_rgb(0,0,0,0.2)] rounded-[20px] flex-col justify-center items-center gap-2.5 inline-flex">
         <form className="w-full flex-col justify-center items-center gap-[15px] flex" onSubmit={handleForm}>
           <div className="w-full flex-col justify-center items-center gap-[15px] flex">
             <h2 className="text-black text-[32px] font-bold leading-9">Welcome</h2>
