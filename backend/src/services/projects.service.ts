@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Project, ProjectDocument } from '../schemas/project.schema';
@@ -13,7 +13,7 @@ export class ProjectsService {
     const { name, description } = projectData;
 
     if (!name) {
-      throw new HttpException('Project name cannot be null or undefined', 400);
+      throw new HttpException('Project name cannot be null or undefined', HttpStatus.BAD_REQUEST);
     }
 
     const slugName = this.nameSlugify(name)
@@ -31,7 +31,7 @@ export class ProjectsService {
   async findOne(name: string): Promise<ProjectDocument> {
     const project = await this.projectModel.findOne({ name }).select({ _id: 0, __v: 0 }).exec()
     if (!project) {
-      throw new HttpException('Project not found', 404);
+      throw new HttpException("Projects not found", HttpStatus.NOT_FOUND);
     }
     return project;
   }
@@ -39,7 +39,7 @@ export class ProjectsService {
   async findBySlug(slug: string): Promise<ProjectDocument> {
     const project = await this.projectModel.findOne({ slug }).select({ _id: 0, __v: 0 }).exec()
     if (!project) {
-      throw new HttpException('Project not found', 404);
+      throw new HttpException("Projects not found", HttpStatus.NOT_FOUND);
     }
     return project;
   }
@@ -47,7 +47,7 @@ export class ProjectsService {
   async findIdBySlug(slug: string): Promise<string> {
     const project = await this.projectModel.findOne({ slug }).exec()
     if (!project) {
-      throw new HttpException('Project not found', 404);
+      throw new HttpException("Projects not found", HttpStatus.NOT_FOUND);
     }
     return project._id.toString();
   }
@@ -55,7 +55,7 @@ export class ProjectsService {
   async findById(id: string): Promise<ProjectDocument> {
     const project = await this.projectModel.findById(id).exec()
     if (!project) {
-      throw new HttpException('Project not found', 404);
+      throw new HttpException("Projects not found", HttpStatus.NOT_FOUND);
     }
     return project;
   }
@@ -87,9 +87,20 @@ export class ProjectsService {
     
     const projects = await this.projectModel.find(searchQuery).sort(sortQuery).select({ _id: 0, __v: 0 }).exec()
     if (projects.length < 1) {
-      throw new HttpException('Projects not found', 404);
+      throw new HttpException("Projects not found", HttpStatus.NOT_FOUND);
     }
     return projects;
+  }
+
+  async checkPermission(slug: string, user_id: string) {
+    const project = await this.projectModel.findOne({ slug });
+    if (!project) {
+      throw new HttpException("Projects not found", HttpStatus.NOT_FOUND);
+    }
+    if (project.user_id !== user_id) {
+      throw new HttpException("Insufficient rights to access the project", HttpStatus.FORBIDDEN);
+    }
+    return project;
   }
 
   async update(id: string, oldSlug: string, projectData: ProjectData) {
@@ -105,7 +116,7 @@ export class ProjectsService {
     this.ProjectValidation(name, hasSlugConflict, description);
 
     if (oldSlug !== slugName) projectData.slug = slugName;
-    projectData.updated_at = new Date();
+    // projectData.updated_at = new Date();
     return await this.projectModel
       .findByIdAndUpdate(id, projectData, { new: true, select: { _id: 0, __v: 0 } })
       .exec();
@@ -120,39 +131,25 @@ export class ProjectsService {
   }
 
   private ProjectValidation(name: string, isExistingProject, description: string) {
-    const errors = [];
-    let error = {
-      field: '',
-      message: ''
-    }
+    const errors: Record<string, string> = {};
 
     if (isExistingProject) {
-      error.field = 'name';
-      error.message = 'A project with this slug already exists';
-      errors.push(error);
+      errors.name = 'A project with this slug already exists';
     }
     if (name.length < 3) {
-      error.field = 'name';
-      error.message = 'The name of the project is less than 3 characters';
-      errors.push(error);
+      errors.name = 'The name of the project is less than 3 characters';
     }
     if (name.length > 50) {
-      error.field = 'name';
-      error.message = 'The name of the project is longer than 50 characters';
-      errors.push(error);
+      errors.name = 'The name of the project is longer than 50 characters';
     }
     if (name.length === 0 || name === null || name === undefined) {
-      error.field = 'name';
-      error.message = 'The name of the project is required';
-      errors.push(error);
+      errors.name = 'The name of the project is required';
     }
     if (description.length > 1500) {
-      error.field = 'description';
-      error.message = 'The description of the project is longer than 1500 characters';
-      errors.push(error);
+      errors.description = 'The description of the project is longer than 1500 characters';
     }
     
-    if (errors.length > 0)
+    if (Object.keys(errors).length > 0)
       throw new HttpException({errors}, 400);
   }
 

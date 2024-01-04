@@ -15,7 +15,7 @@ function ProfileDropdown({username, setIsAuthorized}) {
 
   const handleLogout = (e) => {
     logout();
-    setIsAuthorized(false);
+    setIsAuthorized(null);
   }
   
 

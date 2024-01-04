@@ -38,7 +38,9 @@ export class AuthGuard implements CanActivate {
         }
       );
 
-      request['user'] = payload;
+      const { sub, ...rest} = payload
+
+      request['user'] = { id: sub, ...rest };
     } catch {
       throw new UnauthorizedException();
     }

@@ -35,15 +35,21 @@ function FormProject({ projectData = null, isUpdateAction = false }) {
         let response;
         if (!isUpdateAction) response = await createProject(formData);
         else response = await updateProject(projectData.slug, formData);
-        if (response.status === 201 || response.status === 200) {
+        
+        if (response === "Unauthorized") {
+          window.location.replace('/login');
+        } else if (response.status === 201 || response.status === 200) {
           window.location.replace('/projects/' + response.data.slug);
-        } else {
-          response.data.errors.forEach(error => {
-            setErrors({
-              ...errors,
-              [`${error.field}`]: error.message
-            })
-          });
+        } else if (response.status === 400) {
+          for (const key in response.data.errors) {
+            if (Object.hasOwnProperty.call(response.data.errors, key)) {
+              const message = response.data.errors[key];
+              setErrors(errs => ({
+                ...errs,
+                [key]: message
+              }));
+            }
+          }
         }
       }
     }

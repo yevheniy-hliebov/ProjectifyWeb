@@ -19,8 +19,8 @@ function ProjectItem({ projectData, onDelete }) {
             <h2 className='text-gray-900 text-[32px] max-md:text-[24px] font-bold leading-9'>{projectData.name}</h2>
           </a>
           <span className='text-gray-500 font-normal'>
-            {formatDate(projectData.created_at, 'dd.MM.yyyy (HH:mm) ')}
-            {projectData.created_at === projectData.updated_at ? '' : `, updated - ${formatDate(projectData.updated_at, 'dd.MM.yyyy (HH:mm) ')}`}
+            {formatDate(projectData.createdAt, 'dd.MM.yyyy (HH:mm) ')}
+            {projectData.createdAt === projectData.updatedAt ? '' : `, updated - ${formatDate(projectData.updatedAt, 'dd.MM.yyyy (HH:mm) ')}`}
           </span>
         </div>
         {projectData.description.length === 0 ? null :

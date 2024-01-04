@@ -92,7 +92,7 @@ export class UsersService {
 
       oldUserDto.username = username;
       oldUserDto.email = email;
-      oldUserDto.updated_at = new Date();
+      // oldUserDto.updated_at = new Date();
 
       // Update user
       const updatedUser = await this.userModel.findByIdAndUpdate(id, oldUserDto, { new: true }).select({ __v: 0 }).exec();

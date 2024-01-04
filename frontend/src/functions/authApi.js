@@ -24,9 +24,9 @@ export async function login(signInDto) {
 export async function checkIsAuthorized() {
   const accessToken = getCookie('access-token');
   if (!accessToken) {
-    return undefined
+    return "Unauthorized"
   }
-  return axios.get('/auth/profile', { headers: { "Authorization": accessToken } }).then(response => {
+  return axios.get('/auth', { headers: { "Authorization": accessToken } }).then(response => {
     return response;
   }).catch(err => {
     return err.response;

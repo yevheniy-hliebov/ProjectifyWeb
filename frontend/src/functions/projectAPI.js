@@ -1,4 +1,5 @@
 import axios from "axios"
+import { getCookie } from "./get-cookie";
 
 export async function getProjects(searchText = '', sortBy = '') {
   let queryParams = [];
@@ -6,7 +7,7 @@ export async function getProjects(searchText = '', sortBy = '') {
   if (sortBy !== '') queryParams.push(`sortBy=${sortBy}`);
   let query = queryParams.length > 0 ? '?' + queryParams.join('&') : '';
 
-  return axios.get('/projects' + query).then(response => {    
+  return axios.get('/projects' + query).then(response => {
     return response;
   }).catch(err => { return err.response })
 }
@@ -18,13 +19,31 @@ export async function getProject(slug) {
 }
 
 export async function createProject(projectData) {
-  return axios.post('/projects', projectData).then(response => {
+  const accessToken = getCookie('access-token');
+  if (!accessToken) {
+    return "Unauthorized"
+  }
+  return axios.post('/projects', projectData, { headers: { "Authorization": accessToken } }).then(response => {
+    return response;
+  }).catch(err => { return err.response })
+}
+
+export async function checkPermission(slug) {
+  const accessToken = getCookie('access-token');
+  if (!accessToken) {
+    return "Unauthorized"
+  }
+  return axios.get(`/projects/${slug}/permission`, { headers: { "Authorization": accessToken } }).then(response => {
     return response;
   }).catch(err => { return err.response })
 }
 
 export async function updateProject(slug, projectData) {
-  return axios.put('/projects/' + slug, projectData).then(response => {
+  const accessToken = getCookie('access-token');
+  if (!accessToken) {
+    return "Unauthorized"
+  }
+  return axios.put('/projects/' + slug, projectData, { headers: { "Authorization": accessToken } }).then(response => {
     return response;
   }).catch(err => { return err.response })
 }

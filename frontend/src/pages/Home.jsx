@@ -4,7 +4,7 @@ import { getProjects } from '../functions/projectAPI'
 import Header from '../components/Header'
 import Container from '../components/Container'
 
-function Home() {
+function Home({ authUser, setAuthUser }) {
   const [projects, setProjects] = useState([])
   const [sortBy, setSortBy] = useState('newest')
   const [searchText, setSearchText] = useState('')
@@ -12,8 +12,9 @@ function Home() {
   async function getAndSetProjects(searchText = '', sortBy = '') {
     getProjects(searchText, sortBy)
       .then(response => {
-        if (response.status === 200)
-          setProjects(response.data)
+        if (response.status === 200) {
+          setProjects(response.data.projects)
+        }
         else setProjects([])
       })
   }
@@ -26,7 +27,7 @@ function Home() {
 
   return (
     <div className="wrapper w-full min-h-screen bg-gray-50">
-      <Header h1_text={'List of projects'} btn_link={{ link: '/project/create', color: 'blue', children: 'Create project' }} />
+      <Header h1_text={'List of projects'} btn_link={{ link: '/project/create', color: 'blue', children: 'Create project' }} authUser={authUser} setAuthUser={setAuthUser} />
       <div className="main">
         <div className="section">
           <Container>
@@ -53,7 +54,7 @@ function Home() {
         <div className="section">
           <Container>
             <div className="flex flex-col">
-              { (projects.length === 0) && <div className="mx-auto my-3 text-2xl text-gray-500">Projects not found</div> }
+              {(projects.length === 0) && <div className="mx-auto my-3 text-2xl text-gray-500">Projects not found</div>}
               {projects.map(project => {
                 return (
                   <ProjectItem key={project.slug} projectData={project} onDelete={() => { getAndSetProjects(searchText, sortBy) }} />

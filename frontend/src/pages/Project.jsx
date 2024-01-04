@@ -6,7 +6,7 @@ import { formatDate } from '../functions/formatDate';
 import Header from '../components/Header';
 import Container from '../components/Container';
 
-function Project() {
+function Project({ authUser, setAuthUser }) {
   const { slug } = useParams();
   const [project, setProject] = useState(null)
 
@@ -28,7 +28,7 @@ function Project() {
 
   return (
     <div className='wrapper w-full min-h-screen bg-gray-50'>
-      <Header h1_text={'Read project'} btn_link={{ link: '/', color: 'gray', children: 'Back to Home' }} />
+      <Header h1_text={'Read project'} btn_link={{ link: '/', color: 'gray', children: 'Back to Home' }} authUser={authUser} setAuthUser={setAuthUser}/>
       <div className="main">
         <Container>
           {project ? (
@@ -40,12 +40,12 @@ function Project() {
               </div>
               <div className="self-stretch justify-start items-center gap-2.5 inline-flex">
                 <div className="text-gray-900 text-base font-bold leading-tight">Created:</div>
-                <div className="grow shrink basis-0 text-gray-900 text-base font-normal leading-tight">{formatDate(project.created_at, 'dd.MM.yyyy (HH:mm) ')}</div>
+                <div className="grow shrink basis-0 text-gray-900 text-base font-normal leading-tight">{formatDate(project.createdAt, 'dd.MM.yyyy (HH:mm) ')}</div>
               </div>
-              {project.created_at === project.updated_at ? null : (
+              {project.createdAt === project.updatedAt ? null : (
                 <div className="self-stretch justify-start items-center gap-2.5 inline-flex">
                   <div className="text-gray-900 text-base font-bold leading-tight">Updated:</div>
-                  <div className="grow shrink basis-0 text-gray-900 text-base font-normal leading-tight">{formatDate(project.updated_at, 'dd.MM.yyyy (HH:mm) ')}</div>
+                  <div className="grow shrink basis-0 text-gray-900 text-base font-normal leading-tight">{formatDate(project.updatedAt, 'dd.MM.yyyy (HH:mm) ')}</div>
                 </div>
               )}
               <div className="flex justify-end items-center gap-[10px]">

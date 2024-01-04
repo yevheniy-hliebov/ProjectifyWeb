@@ -26,11 +26,19 @@ export class AuthController {
     return res.json('Authorized')
   }
 
+  @Get()
+  async getAuthorizedUser(@Request() req) {
+    const reqUser = req.user;
+    const user = await this.userService.findById(reqUser.id);
+    if (!user) throw new UnauthorizedException();
+    return { id: user.id, username: user.username, role: user.role };
+  }
+
   @Get('profile')
   async getProfile(@Request() req) {
     const reqUser = req.user;
-    const user = await this.userService.findById(reqUser.sub);
+    const user = await this.userService.findById(reqUser.id);
     if (!user) throw new UnauthorizedException();
-    return { id: user.id, username: user.username };
+    return { id: user.id, username: user.username, role: user.role };
   }
 }
