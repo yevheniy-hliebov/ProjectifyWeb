@@ -43,10 +43,10 @@ function App() {
         <Route element={<AuthorizedRoute user={authUser} isLoading={isLoading} />}>
           <Route path='/project/create' element={<CreateProject authUser={authUser} setAuthUser={setAuthUser} />} />
           <Route path='/projects/:slug/edit' element={<EditProject authUser={authUser} setAuthUser={setAuthUser} />} />
+          <Route path='/' element={<Home authUser={authUser} setAuthUser={setAuthUser} />} />
+          <Route path='/projects/:slug' element={<Project authUser={authUser} setAuthUser={setAuthUser} />} />
+          <Route path="/project-not-found" element={<NotFoundProject />} />
         </Route>
-        <Route path='/' element={<Home authUser={authUser} setAuthUser={setAuthUser} />} />
-        <Route path='/projects/:slug' element={<Project authUser={authUser} setAuthUser={setAuthUser} />} />
-        <Route path="/project-not-found" element={<NotFoundProject />} />
         <Route path="/register" element={<Register authUser={authUser} setAuthUser={setAuthUser} />} />
         <Route path="/login" element={<Login authUser={authUser} setAuthUser={setAuthUser} />} />
         <Route path="*" element={<NotFound />} />

@@ -36,16 +36,16 @@ export class ProjectsService {
     return project;
   }
 
-  async findBySlug(slug: string): Promise<ProjectDocument> {
-    const project = await this.projectModel.findOne({ slug }).select({ _id: 0, __v: 0 }).exec()
+  async findBySlug(slug: string, user_id: string): Promise<ProjectDocument> {
+    const project = await this.projectModel.findOne({ slug, user_id }).select({ _id: 0, __v: 0 }).exec()
     if (!project) {
       throw new HttpException("Projects not found", HttpStatus.NOT_FOUND);
     }
     return project;
   }
 
-  async findIdBySlug(slug: string): Promise<string> {
-    const project = await this.projectModel.findOne({ slug }).exec()
+  async findIdBySlug(slug: string, user_id: string): Promise<string> {
+    const project = await this.projectModel.findOne({ slug, user_id }).exec()
     if (!project) {
       throw new HttpException("Projects not found", HttpStatus.NOT_FOUND);
     }
@@ -60,31 +60,29 @@ export class ProjectsService {
     return project;
   }
 
-  async findAll(sortBy?: string, searchText?: string): Promise<Project[]> {
-    let searchQuery = {}
+  async findAll(user_id: string, sortBy?: string, searchText?: string): Promise<Project[]> {
+    let searchQuery: any = { user_id };
 
     if (searchText) {
       const searchRegex = new RegExp(searchText, 'i'); // 'i' for case-insensitive search
-      searchQuery = {
-        $or: [
-          { name: { $regex: searchRegex } },
-          { description: { $regex: searchRegex } }
-        ]
-      }
+      searchQuery.$or = [
+        { name: { $regex: searchRegex } },
+        { description: { $regex: searchRegex } }
+      ]
     }
 
 
     let sortQuery = {};
     if (sortBy) {
       switch (sortBy) {
-        case 'newest': sortQuery = { created_at: -1 }; break;
-        case 'oldest': sortQuery = { created_at: 1 }; break;
+        case 'newest': sortQuery = { createdAt: -1 }; break;
+        case 'oldest': sortQuery = { createdAt: 1 }; break;
         case 'alphabetical': sortQuery = { name: 1 }; break;
         case 'reverseAlphabetical': sortQuery = { name: -1 }; break;
         default: break;
       }
     }
-    
+
     const projects = await this.projectModel.find(searchQuery).sort(sortQuery).select({ _id: 0, __v: 0 }).exec()
     if (projects.length < 1) {
       throw new HttpException("Projects not found", HttpStatus.NOT_FOUND);
@@ -148,9 +146,9 @@ export class ProjectsService {
     if (description.length > 1500) {
       errors.description = 'The description of the project is longer than 1500 characters';
     }
-    
+
     if (Object.keys(errors).length > 0)
-      throw new HttpException({errors}, 400);
+      throw new HttpException({ errors }, 400);
   }
 
   private nameSlugify(name: string) {

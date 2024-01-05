@@ -60,7 +60,6 @@ function Login({ authUser, setAuthUser }) {
             <Link to='/register' className="text-gray-500 text-sm font-normal underline leading-tight">Sign Up</Link>
           </div>
           <div className="justify-center items-center gap-[15px] inline-flex">
-            <Button color="gray" link="/">Cancel</Button>
             <Button color="blue" type='submit'>Log In</Button>
           </div>
         </form>

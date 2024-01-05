@@ -12,12 +12,7 @@ function Header({ h1_text, btn_link = null, authUser, setAuthUser }) {
         <div className="flex justify-between items-center flex-wrap gap-[20px]">
           <h1 className="grow shrink basis-0 text-gray-900 text-[38px] max-sm:text-[30px] font-bold leading-[44px] whitespace-nowrap">{h1_text}</h1>
           {btn_link && <Button link={link} color={color}>{children}</Button>}
-          {authUser ? <ProfileDropdown username={authUser.username} setIsAuthorized={setAuthUser} /> :
-            <div className='justify-start items-center gap-2.5 inline-flex'>
-              <Button link="/login" color="red">Log In</Button>
-              <Button link="/register" color="gray">Sign Up</Button>
-            </div>
-          }
+          {authUser ? <ProfileDropdown username={authUser.username} setIsAuthorized={setAuthUser} /> : null}
         </div>
       </Container>
     </div>

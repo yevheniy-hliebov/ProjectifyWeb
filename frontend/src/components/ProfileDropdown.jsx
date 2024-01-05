@@ -31,9 +31,6 @@ function ProfileDropdown({username, setIsAuthorized}) {
           <div className="self-stretch text-center text-gray-900 text-lg font-normal truncate">{username}</div>
         </div>
         <ul className='flex-col justify-start items-start flex'>
-          <li className='w-full px-2.5 py-[7px] flex-col justify-center items-start flex hover:bg-gray-100 cursor-pointer text-gray-900 text-base font-normal leading-tight'>
-            <Link to='/my-projects'>My projects</Link>
-          </li>
           <li className='w-full px-2.5 py-[7px] flex-col justify-center items-start flex hover:bg-gray-100 cursor-pointer text-gray-900 text-base font-normal leading-tight' onClick={handleLogout}>Log out</li>
         </ul>
       </div>

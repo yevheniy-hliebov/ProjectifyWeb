@@ -10,20 +10,9 @@ function EditProject({ authUser, setAuthUser }) {
   const [project, setProject] = useState(null)
 
   useEffect(() => {
-    checkPermission(slug).then(response => {
-      if (response === "Unauthorized") {
-        navigate('/login');
-      }
-      else if (response && response.status === 403) {
-        navigate('/forbidden')
-      } else if (response && response.status === 404) {
-        navigate('/project-not-found')
-      } else if (response) {
-        getProject(slug).then(response => {
-          if (response && response.status === 200) setProject(response.data)
-          if (response && response.status === 404) navigate('/project-not-found')
-        })
-      }
+    getProject(slug).then(response => {
+      if (response && response.status === 200) setProject(response.data)
+      if (response && response.status === 404) navigate('/project-not-found')
     })
   }, [slug])
 
