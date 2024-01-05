@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import Container from '../../components/Container';
 import Button from '../../components/Button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Input from '../../components/Input';
 import { login } from '../../functions/authApi';
 
-function Login() {
+function Login({ authUser, setAuthUser }) {
+  const navigate = useNavigate();
   const [user, setUser] = useState({
     username: '',
     password: ''
@@ -30,11 +31,18 @@ function Login() {
   const handleForm = async (e) => {
     e.preventDefault();
     const response = await login(user);
-    if (response.status === 200) {
-      window.location.replace('/');
+    if (!response) {
+      navigate('/internal-server-error')
+    } else if (response.status === 200) {
+      setAuthUser(response.data)
+      navigate('/');
     } else {
       setError(response.data.message);
     }
+  }
+
+  if (authUser) {
+    navigate('/')
   }
 
   return (

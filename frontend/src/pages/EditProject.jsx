@@ -1,26 +1,27 @@
 import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import FormProject from '../components/FormProject'
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { checkPermission, getProject } from '../functions/projectAPI';
 
 function EditProject({ authUser, setAuthUser }) {
+  const navigate = useNavigate();
   const { slug } = useParams();
   const [project, setProject] = useState(null)
 
   useEffect(() => {
     checkPermission(slug).then(response => {
       if (response === "Unauthorized") {
-        window.location.replace('/login');
+        navigate('/login');
       }
       else if (response && response.status === 403) {
-        window.location.replace('/forbidden')
+        navigate('/forbidden')
       } else if (response && response.status === 404) {
-        window.location.replace('/project-not-found')
+        navigate('/project-not-found')
       } else if (response) {
         getProject(slug).then(response => {
           if (response && response.status === 200) setProject(response.data)
-          if (response && response.status === 404) window.location.replace('/project-not-found')
+          if (response && response.status === 404) navigate('/project-not-found')
         })
       }
     })

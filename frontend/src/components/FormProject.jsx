@@ -4,8 +4,10 @@ import Button from './Button'
 import slugify from '../functions/slugify'
 import { validationProjectData } from '../functions/validation'
 import { createProject, updateProject } from '../functions/projectAPI'
+import { useNavigate } from 'react-router-dom'
 
 function FormProject({ projectData = null, isUpdateAction = false }) {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -37,9 +39,10 @@ function FormProject({ projectData = null, isUpdateAction = false }) {
         else response = await updateProject(projectData.slug, formData);
         
         if (response === "Unauthorized") {
-          window.location.replace('/login');
+          navigate('/login');
+          
         } else if (response.status === 201 || response.status === 200) {
-          window.location.replace('/projects/' + response.data.slug);
+          navigate('/projects/' + response.data.slug);
         } else if (response.status === 400) {
           for (const key in response.data.errors) {
             if (Object.hasOwnProperty.call(response.data.errors, key)) {

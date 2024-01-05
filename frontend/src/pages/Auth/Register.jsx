@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import Container from '../../components/Container';
 import Button from '../../components/Button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Input from '../../components/Input';
 import { validateUserDto } from '../../functions/validation';
 import { register } from '../../functions/authApi';
 
-function Register() {
+function Register({ authUser, setAuthUser }) {
+  const navigate = useNavigate();
   const [user, setUser] = useState({
     username: '',
     email: '',
@@ -46,8 +47,12 @@ function Register() {
     setErrors(errs);
     if (errs.username === '' && errs.email === '' && errs.password === '') {
       const response = await register(user);
-      if (response.status === 201 || response.status === 200) {
-        window.location.replace('/');
+      if (!response) {
+        navigate('/internal-server-error')
+      }
+      else if (response.status === 201 || response.status === 200) {
+        setAuthUser(response.data)
+        navigate('/');
       } else {
         for (const key in response.data.errors) {
           if (Object.hasOwnProperty.call(response.data.errors, key)) {
@@ -60,6 +65,10 @@ function Register() {
         }
       }
     }
+  }
+
+  if (authUser) {
+    navigate('/')
   }
 
   return (

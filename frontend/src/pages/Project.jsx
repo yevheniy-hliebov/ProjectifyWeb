@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../components/Button';
 import { deleteProject, getProject } from '../functions/projectAPI';
 import { formatDate } from '../functions/formatDate';
@@ -7,20 +7,21 @@ import Header from '../components/Header';
 import Container from '../components/Container';
 
 function Project({ authUser, setAuthUser }) {
+  const navigate = useNavigate();
   const { slug } = useParams();
   const [project, setProject] = useState(null)
 
   useEffect(() => {
     getProject(slug).then(response => {
       if (response.status === 200) setProject(response.data)
-      if (response.status === 404) window.location.replace('/project-not-found')
+      if (response.status === 404) navigate('/project-not-found')
     })
   }, [slug])
 
   const handleDelete = async (e) => {
     e.preventDefault();
     deleteProject(project.slug).then(response => {
-      if (response.status === 204)  window.location.replace('/')
+      if (response.status === 204)  navigate('/')
     })
   }
 
