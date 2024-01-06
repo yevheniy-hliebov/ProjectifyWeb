@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import Container from './Container'
 import Button from './Button'
 import slugify from '../functions/slugify'
 import { validationProjectData } from '../functions/validation'
 import { createProject, updateProject } from '../functions/projectAPI'
 import { useNavigate } from 'react-router-dom'
+import { NotificationContext } from './Notifications'
 
 function FormProject({ projectData = null, isUpdateAction = false }) {
   const navigate = useNavigate();
+  const [notificationsParams, setNotificationsParams] = useContext(NotificationContext)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -37,13 +39,22 @@ function FormProject({ projectData = null, isUpdateAction = false }) {
         let response;
         if (!isUpdateAction) response = await createProject(formData);
         else response = await updateProject(projectData.slug, formData);
-        
+ 
         if (response === "Unauthorized") {
           navigate('/login');
-          
         } else if (response.status === 201 || response.status === 200) {
+          setNotificationsParams([...notificationsParams, {
+            title: `Success ${!isUpdateAction ? 'created' : 'updated'}!`,
+            message: `Project "${formData.name}" was ${!isUpdateAction ? 'created' : 'updated'} successfully.`,
+            status: "success",
+          }])
           navigate('/projects/' + response.data.slug);
         } else if (response.status === 400) {
+          setNotificationsParams([...notificationsParams, {
+            title: `Error!`,
+            message: `Failed to ${!isUpdateAction ? 'create' : 'update'} project "${formData.name}".`,
+            status: "error",
+          }])
           for (const key in response.data.errors) {
             if (Object.hasOwnProperty.call(response.data.errors, key)) {
               const message = response.data.errors[key];

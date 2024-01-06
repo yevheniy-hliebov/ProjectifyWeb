@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../components/Button';
 import { deleteProject, getProject } from '../functions/projectAPI';
 import { formatDate } from '../functions/formatDate';
 import Header from '../components/Header';
 import Container from '../components/Container';
+import { NotificationContext } from '../components/Notifications';
 
-function Project({ authUser, setAuthUser }) {
+function Project() {
   const navigate = useNavigate();
+  const [notificationsParams, setNotificationsParams] = useContext(NotificationContext)
   const { slug } = useParams();
   const [project, setProject] = useState(null)
 
@@ -21,7 +23,14 @@ function Project({ authUser, setAuthUser }) {
   const handleDelete = async (e) => {
     e.preventDefault();
     deleteProject(project.slug).then(response => {
-      if (response.status === 204)  navigate('/')
+      if (response.status === 204) {
+        setNotificationsParams([...notificationsParams, {
+          title: `Succefully deleted!`,
+          message: `Project "${project.name}" was deleted successfully.`,
+          status: "success",
+        }])
+        navigate('/')
+      }
     })
   }
 
@@ -29,7 +38,7 @@ function Project({ authUser, setAuthUser }) {
 
   return (
     <div className='wrapper w-full min-h-screen bg-gray-50'>
-      <Header h1_text={'Read project'} btn_link={{ link: '/', color: 'gray', children: 'Back to Home' }} authUser={authUser} setAuthUser={setAuthUser}/>
+      <Header h1_text={'Read project'} btn_link={{ link: '/', color: 'gray', children: 'Back to Home' }}/>
       <div className="main">
         <Container>
           {project ? (

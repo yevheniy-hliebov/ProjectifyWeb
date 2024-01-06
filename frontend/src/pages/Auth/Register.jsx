@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import Container from '../../components/Container';
 import Button from '../../components/Button';
 import { Link, useNavigate } from 'react-router-dom';
 import Input from '../../components/Input';
 import { validateUserDto } from '../../functions/validation';
 import { register } from '../../functions/authApi';
+import { AuthContext } from '../../App';
 
-function Register({ authUser, setAuthUser }) {
+function Register() {
+  const [authUser, setAuthUser] = useContext(AuthContext)
   const navigate = useNavigate();
   const [user, setUser] = useState({
     username: '',

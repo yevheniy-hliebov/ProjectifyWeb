@@ -1,5 +1,5 @@
 import './scss/app.scss'
-import { useEffect, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Home from './pages/Home';
 import Project from './pages/Project';
@@ -12,10 +12,13 @@ import Login from './pages/Auth/Login';
 import { checkIsAuthorized } from './functions/authApi';
 import Forbidden from './pages/Forbidden';
 import InternalServerError from './pages/InternalServerError';
+import Notifications, { NotificationContext } from './components/Notifications';
 
 import axios from 'axios';
 axios.defaults.baseURL = "http://localhost:4000"
 axios.defaults.withCredentials = true
+
+export const AuthContext = createContext();
 
 function AuthorizedRoute({ user, isLoading }) {
   if (!user && !isLoading) {
@@ -27,6 +30,7 @@ function AuthorizedRoute({ user, isLoading }) {
 function App() {
   const [authUser, setAuthUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [notificationsParams, setNotificationsParams] = useState([])
 
   useEffect(() => {
     checkIsAuthorized().then(response => {
@@ -38,22 +42,29 @@ function App() {
   }, [])
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<AuthorizedRoute user={authUser} isLoading={isLoading} />}>
-          <Route path='/project/create' element={<CreateProject authUser={authUser} setAuthUser={setAuthUser} />} />
-          <Route path='/projects/:slug/edit' element={<EditProject authUser={authUser} setAuthUser={setAuthUser} />} />
-          <Route path='/' element={<Home authUser={authUser} setAuthUser={setAuthUser} />} />
-          <Route path='/projects/:slug' element={<Project authUser={authUser} setAuthUser={setAuthUser} />} />
-          <Route path="/project-not-found" element={<NotFoundProject />} />
-        </Route>
-        <Route path="/register" element={<Register authUser={authUser} setAuthUser={setAuthUser} />} />
-        <Route path="/login" element={<Login authUser={authUser} setAuthUser={setAuthUser} />} />
-        <Route path="*" element={<NotFound />} />
-        <Route path="/forbidden" element={<Forbidden />} />
-        <Route path="/internal-server-error" element={<InternalServerError />} />
-      </Routes>
-    </BrowserRouter>
+    <>
+      <NotificationContext.Provider value={[notificationsParams, setNotificationsParams]}>
+        <Notifications />
+        <AuthContext.Provider value={[authUser, setAuthUser]}>
+          <BrowserRouter>
+            <Routes>
+              <Route element={<AuthorizedRoute user={authUser} isLoading={isLoading} />}>
+                <Route path='/' element={<Home />} />
+                <Route path='/project/create' element={<CreateProject />} />
+                <Route path='/projects/:slug' element={<Project />} />
+                <Route path='/projects/:slug/edit' element={<EditProject />} />
+                <Route path="/project-not-found" element={<NotFoundProject />} />
+              </Route>
+              <Route path="/register" element={<Register />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="*" element={<NotFound />} />
+              <Route path="/forbidden" element={<Forbidden />} />
+              <Route path="/internal-server-error" element={<InternalServerError />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthContext.Provider>
+      </NotificationContext.Provider>
+    </>
   );
 }
 

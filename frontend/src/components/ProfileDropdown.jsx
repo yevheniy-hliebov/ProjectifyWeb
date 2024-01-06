@@ -1,8 +1,10 @@
-import React from 'react'
-import { Link } from 'react-router-dom';
+import React, { useContext } from 'react'
 import { logout } from '../functions/logut';
+import { AuthContext } from '../App';
 
-function ProfileDropdown({username, setIsAuthorized}) {
+function ProfileDropdown() {
+  const [authUser, setAuthUser] = useContext(AuthContext)
+
   document.addEventListener('click', (event) => {
     const detailsElement = document.querySelector('.profile-dropdown');
     if (detailsElement) {
@@ -15,10 +17,10 @@ function ProfileDropdown({username, setIsAuthorized}) {
 
   const handleLogout = (e) => {
     logout();
-    setIsAuthorized(null);
+    setAuthUser(null);
   }
   
-
+  if (!authUser) return null;
   return (
     <details className="profile-dropdown relative select-none">
       <summary className="list-none cursor-pointer p-[10px] group">
@@ -28,7 +30,7 @@ function ProfileDropdown({username, setIsAuthorized}) {
       </summary>
       <div className="profile-dropdown-content absolute top-full right-[10px] w-[160px] shadow-[0_3px_10px_rgb(0,0,0,0.2)] bg-gray-50 z-[1] rounded-[3px] border border-gray-500">
         <div className="w-full px-2.5 py-[10px] flex-col justify-center items-start gap-2.5 inline-flex border-b border-gray-500">
-          <div className="self-stretch text-center text-gray-900 text-lg font-normal truncate">{username}</div>
+          <div className="self-stretch text-center text-gray-900 text-lg font-normal truncate">{authUser.username}</div>
         </div>
         <ul className='flex-col justify-start items-start flex'>
           <li className='w-full px-2.5 py-[7px] flex-col justify-center items-start flex hover:bg-gray-100 cursor-pointer text-gray-900 text-base font-normal leading-tight' onClick={handleLogout}>Log out</li>

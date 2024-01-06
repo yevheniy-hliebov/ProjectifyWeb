@@ -1,13 +1,22 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import Button from './Button'
 import { formatDate } from '../functions/formatDate'
 import { deleteProject } from '../functions/projectAPI'
+import { NotificationContext } from './Notifications'
 
 function ProjectItem({ projectData, onDelete }) {
+  const [notificationsParams, setNotificationsParams] = useContext(NotificationContext)
   const handleDelete  = async (e) => {
     e.preventDefault();
     deleteProject(projectData.slug).then(response => {
-      if(response.status === 204) setTimeout(onDelete, 500);
+      if(response.status === 204) { 
+        setTimeout(onDelete, 500);
+        setNotificationsParams([...notificationsParams, {
+          title: `Succefully deleted!`,
+          message: `Project "${projectData.name}" was deleted successfully.`,
+          status: "success",
+        }])
+      }
     })
   }
 

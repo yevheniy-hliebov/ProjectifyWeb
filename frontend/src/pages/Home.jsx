@@ -4,7 +4,7 @@ import { getProjects } from '../functions/projectAPI'
 import Header from '../components/Header'
 import Container from '../components/Container'
 
-function Home({ authUser, setAuthUser }) {
+function Home() {
   const [projects, setProjects] = useState([])
   const [sortBy, setSortBy] = useState('newest')
   const [searchText, setSearchText] = useState('')
@@ -27,7 +27,7 @@ function Home({ authUser, setAuthUser }) {
 
   return (
     <div className="wrapper w-full min-h-screen bg-gray-50">
-      <Header h1_text="ProjectifyWeb" btn_link={{ link: '/project/create', color: 'blue', children: 'Create project' }} authUser={authUser} setAuthUser={setAuthUser} />
+      <Header h1_text="ProjectifyWeb" btn_link={{ link: '/project/create', color: 'blue', children: 'Create project' }} />
       <div className="main">
         <div className="section">
           <Container>
