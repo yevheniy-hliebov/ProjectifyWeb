@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Put, Delete, Query, HttpCode, Request, HttpException, HttpStatus } from '@nestjs/common';
 import { ProjectsService } from '../services/projects.service';
 import { Project } from '../schemas/project.schema';
-import { ProjectData } from 'src/interfaces/project.interface';
+import { ProjectData } from '../interfaces/project.interface';
 
 @Controller('projects')
 export class ProjectsController {

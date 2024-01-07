@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import Header from '../components/Header'
-import FormProject from '../components/FormProject'
+import Header from '../../components/Header'
+import FormProject from '../../components/FormProject'
 import { useNavigate, useParams } from 'react-router-dom';
-import { checkPermission, getProject } from '../functions/projectAPI';
+import { getProject } from '../../functions/projectAPI';
 
 function EditProject() {
   const navigate = useNavigate();

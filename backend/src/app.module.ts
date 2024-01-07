@@ -6,6 +6,7 @@ import configuration from './config/configuration';
 import db_configuration from './config/database.configuration';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ProjectModule } from './modules/projects.module';
+import { TaskModule } from './modules/tasks.module';
 import { AuthModule } from './auth/auth.module';
 
 @Module({
@@ -21,6 +22,7 @@ import { AuthModule } from './auth/auth.module';
       }),
     }),
     ProjectModule,
+    TaskModule,
     AuthModule,
   ],
   controllers: [AppController],

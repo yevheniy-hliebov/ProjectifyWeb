@@ -3,7 +3,6 @@ export interface ProjectData {
     description?: string,
     slug?: string
     user_id?: string,
-    isPrivate?: boolean,
     createdAt?: Date,
     updatedAt?: Date,
 }

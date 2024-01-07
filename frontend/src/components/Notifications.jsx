@@ -3,7 +3,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 export const NotificationContext = createContext();
 
 function Notification({ data, onClosedNotification }) {
-  console.log(1);
   const [isShow, setIsShow] = useState(false);
   useEffect(() => {
     if (data) {
@@ -11,7 +10,7 @@ function Notification({ data, onClosedNotification }) {
       const timeoutId = setTimeout(() => {
         setIsShow(false);
         onClosedNotification()
-      }, 10000);
+      }, 20000);
       return () => clearTimeout(timeoutId);
     }
   }, [data]);
@@ -44,7 +43,7 @@ function Notification({ data, onClosedNotification }) {
 function Notifications() {
   const [notificationsParams, setNotificationsParams] = useContext(NotificationContext)
   return (
-    <div className="absolute z-50 w-96 bottom-0 right-0 overflow-hidden">
+    <div className="fixed z-50 w-96 bottom-0 right-3 flex flex-col items-end overflow-hidden">
       {notificationsParams.map((notification, indexNotification) => {
         return (
           <Notification key={indexNotification} data={notification} onClosedNotification={() => {

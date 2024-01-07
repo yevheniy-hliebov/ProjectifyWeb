@@ -8,7 +8,7 @@ export class Project {
     @Prop({ unique: true, required: true, minlength: 3, maxlength: 50 })
     name: string;
 
-    @Prop({ maxlength: 1500 })
+    @Prop({ default: null, maxlength: 1500 })
     description: string;
 
     @Prop({ unique: true })
@@ -16,9 +16,6 @@ export class Project {
 
     @Prop({ required: true })
     user_id: string;
-
-    @Prop({ required: true, default: false })
-    isPrivate: string;
 }
 
 export const ProjectSchema = SchemaFactory.createForClass(Project)

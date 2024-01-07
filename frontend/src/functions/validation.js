@@ -76,3 +76,76 @@ export function validationProjectData(projectData) {
 
   return errors;
 }
+
+export function TaskValidation(taskDto) {
+  const { name, description, status, priority, start_date, end_date } = taskDto;
+  console.log(taskDto);
+  const errors = {
+    name: '',
+    description: '',
+    status: '',
+    priority: '',
+    start_date: '',
+    end_date: ''
+  };
+
+  if (name.length < 3) {
+    errors.name = 'The name of the task is less than 3 characters';
+  }
+  if (name.length > 50) {
+    errors.name = 'The name of the task is longer than 50 characters';
+  }
+  if (name.length === 0 || name === null || name === undefined) {
+    errors.name = 'The name of the task is required';
+  }
+  if (description !== undefined && description.length > 500) {
+    errors.description = 'The description of the task is longer than 1500 characters';
+  }
+
+  if (status !== '') {
+    const validStatuses = ['Not started', 'In progress', 'Done'];
+    if (!validStatuses.includes(status)) {
+      errors.status = 'Invalid status entered for the task';
+    }
+  }
+
+  if (priority !== '') {
+    const validPriority = ['Low', 'Medium', 'High'];
+    if (!validPriority.includes(priority)) {
+      errors.priority = 'Invalid priority entered for the task';
+    }
+  }
+
+  if (start_date !== '') {
+    if (!validateDate(start_date)) {
+      errors.start_date = 'Invalid start date entered for the task'
+    }
+  }
+
+  if (end_date !== '') {
+    if (!validateDate(end_date)) {
+      errors.end_date = 'Invalid end date entered for the task'
+    }
+  }
+
+  if (Object.keys(errors).length > 0)
+    return errors;
+}
+
+function validateDate(dateString) {
+  const [yearStr, monthStr, dayStr] = dateString.split(/[-]/)
+  const day = parseInt(dayStr);
+  const month = parseInt(monthStr);
+  const year = parseInt(yearStr);
+  if (month < 1 || month > 12) {
+    return false;
+  }
+  const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (day < 1 || day > daysInMonth[month - 1]) {
+    return false;
+  }
+  if (month === 2 && day === 29 && year % 4 !== 0) {
+    return false;
+  }
+  return true;
+}
