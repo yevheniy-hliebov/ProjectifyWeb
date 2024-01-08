@@ -33,7 +33,7 @@ function Login() {
   const handleForm = async (e) => {
     e.preventDefault();
     const response = await login(user);
-    if (!response) {
+    if (response === undefined) {
       navigate('/internal-server-error')
     } else if (response.status === 200) {
       setAuthUser(response.data)

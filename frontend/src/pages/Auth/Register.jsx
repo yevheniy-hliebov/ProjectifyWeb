@@ -49,10 +49,9 @@ function Register() {
     setErrors(errs);
     if (errs.username === '' && errs.email === '' && errs.password === '') {
       const response = await register(user);
-      if (!response) {
+      if (response === undefined) {
         navigate('/internal-server-error')
-      }
-      else if (response.status === 201 || response.status === 200) {
+      } else if (response.status === 201 || response.status === 200) {
         setAuthUser(response.data)
         navigate('/');
       } else {

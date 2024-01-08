@@ -7,6 +7,9 @@ import Header from '../../components/Header';
 import Container from '../../components/Container';
 import { NotificationContext } from '../../components/Notifications';
 import { deleteTask, getTasks } from '../../functions/taskApi';
+import { handleResponse } from '../../functions/handleResponse';
+
+const emptyFunction = () => { };
 
 function Project() {
   const navigate = useNavigate();
@@ -20,24 +23,19 @@ function Project() {
 
   useEffect(() => {
     getProject(slug).then(response => {
-      if (response === "Unauthorized") {
-        navigate('/login');
-      } else if (response.status === 200) {
+      handleResponse(response, navigate, () => {
         setProject(response.data);
         getAndSetTasks(searchText, sortBy)
-      } else if (response.status === 404) navigate('/project-not-found')
+      }, emptyFunction, () => { navigate('/project-not-found') })
     })
   }, [slug])
 
   async function getAndSetTasks(searchText = '', sortBy = '') {
-    getTasks(slug, searchText, sortBy)
-      .then(response => {
-        if (response === "Unauthorized") {
-          navigate('/login');
-        } else if (response.status === 200) {
-          setTasks(response.data.tasks)
-        } else setTasks([])
-      })
+    getTasks(slug, searchText, sortBy).then(response => {
+      handleResponse(response, navigate, () => {
+        setTasks(response.data.tasks)
+      }, () => { setTasks([]) }, () => { setTasks([]) })
+    })
   }
   useEffect(() => {
     getAndSetTasks(searchText, sortBy);
@@ -46,45 +44,40 @@ function Project() {
   const handleDelete = async (e) => {
     e.preventDefault();
     deleteProject(project.slug).then(response => {
-      if (response === "Unauthorized") {
-        navigate('/login');
-      } else if (response.status === 204) {
+      handleResponse(response, navigate, emptyFunction, emptyFunction, () => {
+        setNotificationsParams([...notificationsParams, {
+          title: `Error!`,
+          message: `Failed to delete project "${project.name}".`,
+          status: "error",
+        }])
+      }, () => {
         setNotificationsParams([...notificationsParams, {
           title: `Succefully deleted!`,
           message: `Project "${project.name}" was deleted successfully.`,
           status: "success",
         }])
         navigate('/')
-      } else {
-        setNotificationsParams([...notificationsParams, {
-          title: `Error!`,
-          message: `Failed to delete project "${project.name}".`,
-          status: "error",
-        }])
-      }
+      })
     })
   }
 
   const handleDeleteTask = async (e, taskData) => {
     e.preventDefault();
     deleteTask(project.slug, taskData.number).then(response => {
-      console.log(response);
-      if (response === "Unauthorized") {
-        navigate('/login');
-      } else if (response.status === 204) {
+      handleResponse(response, navigate, emptyFunction, emptyFunction, () => {
+        setNotificationsParams([...notificationsParams, {
+          title: `Error!`,
+          message: `Failed to delete task "${taskData.name}".`,
+          status: "error",
+        }])
+      }, () => {
         setNotificationsParams([...notificationsParams, {
           title: `Succefully deleted!`,
           message: `Task "${taskData.name}" was deleted successfully.`,
           status: "success",
         }])
         getAndSetTasks(searchText, sortBy)
-      } else {
-        setNotificationsParams([...notificationsParams, {
-          title: `Error!`,
-          message: `Failed to delete task "${taskData.name}".`,
-          status: "error",
-        }])
-      }
+      })
     })
   }
 

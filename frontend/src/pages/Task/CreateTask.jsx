@@ -3,6 +3,9 @@ import FormTask from '../../components/FormTask'
 import Header from '../../components/Header'
 import { useNavigate, useParams } from 'react-router-dom';
 import { getProject } from '../../functions/projectAPI';
+import { handleResponse } from '../../functions/handleResponse';
+
+const emptyFunction = () => {};
 
 function CreateTask() {
   const { slug } = useParams();
@@ -11,8 +14,11 @@ function CreateTask() {
 
   useEffect(() => {  
     getProject(slug).then(response => {
-      if (response.status === 200) setProjectName(response.data.name)
-      if (response.status === 404) navigate('/project-not-found')
+      handleResponse(response, navigate, () => {
+        setProjectName(response.data.name)
+      }, emptyFunction, () => {
+        navigate('/project-not-found')
+      })
     })
   }, [slug])
   

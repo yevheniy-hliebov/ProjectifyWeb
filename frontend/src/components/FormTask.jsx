@@ -8,6 +8,7 @@ import Textarea from './Textarea';
 import Select from './Select';
 import { TaskValidation } from '../functions/validation';
 import { createTask, updateTask } from '../functions/taskApi';
+import { handleResponse } from '../functions/handleResponse';
 
 function FormTask({ taskData = null, isUpdateAction = false }) {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ function FormTask({ taskData = null, isUpdateAction = false }) {
   useEffect(() => {
     if (taskData) setFormData(taskData);
   }, [taskData])
-  
+
 
   const handleName = (e) => {
     const name = e.target.value;
@@ -93,16 +94,14 @@ function FormTask({ taskData = null, isUpdateAction = false }) {
       if (!isUpdateAction) response = await createTask(formData, slug);
       else response = await updateTask(slug, taskData.number, formData);
 
-      if (response === "Unauthorized") {
-        navigate('/login');
-      } else if (response.status === 201 || response.status === 200) {
+      handleResponse(response, navigate, () => {
         setNotificationsParams([...notificationsParams, {
           title: `Success ${!isUpdateAction ? 'created' : 'updated'}!`,
           message: `Task "${formData.name}" was ${!isUpdateAction ? 'created' : 'updated'} successfully.`,
           status: "success",
         }])
         navigate('/projects/' + slug);
-      } else if (response.status === 400) {
+      }, () => {
         setNotificationsParams([...notificationsParams, {
           title: `Error!`,
           message: `Failed to ${!isUpdateAction ? 'create' : 'update'} task "${formData.name}".`,
@@ -117,7 +116,7 @@ function FormTask({ taskData = null, isUpdateAction = false }) {
             }));
           }
         }
-      }
+      })
     }
   }
 

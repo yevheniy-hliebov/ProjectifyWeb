@@ -3,8 +3,11 @@ import ProjectItem from '../components/ProjectItem'
 import { getProjects } from '../functions/projectAPI'
 import Header from '../components/Header'
 import Container from '../components/Container'
+import { useNavigate } from 'react-router-dom'
+import { handleResponse } from '../functions/handleResponse'
 
 function Home() {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState([])
   const [sortBy, setSortBy] = useState('newest')
   const [searchText, setSearchText] = useState('')
@@ -12,10 +15,9 @@ function Home() {
   async function getAndSetProjects(searchText = '', sortBy = '') {
     getProjects(searchText, sortBy)
       .then(response => {
-        if (response.status === 200) {
+        handleResponse(response, navigate, () => {
           setProjects(response.data.projects)
-        }
-        else setProjects([])
+        }, () => {setProjects([])}, () => {setProjects([])})
       })
   }
 

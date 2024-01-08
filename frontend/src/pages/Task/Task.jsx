@@ -6,6 +6,9 @@ import Header from '../../components/Header';
 import Container from '../../components/Container';
 import { NotificationContext } from '../../components/Notifications';
 import { deleteTask, getTask, getTasks } from '../../functions/taskApi';
+import { handleResponse } from '../../functions/handleResponse';
+
+const emptyFunction = () => { };
 
 function Task() {
   const navigate = useNavigate();
@@ -15,34 +18,31 @@ function Task() {
 
   useEffect(() => {
     getTask(slug, number).then(response => {
-      if (response === "Unauthorized") {
-        navigate('/login');
-      } else if (response.status === 200) {
-        setTask(response.data);
-      } else if (response.status === 404) navigate('/task-not-found')
+      handleResponse(response, navigate, () => {
+        setTask(response.data)
+      }, emptyFunction, () => {
+        navigate('/task-not-found')
+      })
     })
   }, [slug])
 
   const handleDeleteTask = async (e, taskData) => {
     e.preventDefault();
     deleteTask(slug, taskData.number).then(response => {
-      console.log(response);
-      if (response === "Unauthorized") {
-        navigate('/login');
-      } else if (response.status === 204) {
+      handleResponse(response, navigate, emptyFunction, emptyFunction, () => {
+        setNotificationsParams([...notificationsParams, {
+          title: `Error!`,
+          message: `Failed to delete task "${taskData.name}".`,
+          status: "error",
+        }])
+      }, () => {
         setNotificationsParams([...notificationsParams, {
           title: `Succefully deleted!`,
           message: `Task "${taskData.name}" was deleted successfully.`,
           status: "success",
         }])
         navigate('/projects/' + slug)
-      } else {
-        setNotificationsParams([...notificationsParams, {
-          title: `Error!`,
-          message: `Failed to delete task "${taskData.name}".`,
-          status: "error",
-        }])
-      }
+      })
     })
   }
 

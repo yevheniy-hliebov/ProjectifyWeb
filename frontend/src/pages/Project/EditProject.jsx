@@ -3,6 +3,7 @@ import Header from '../../components/Header'
 import FormProject from '../../components/FormProject'
 import { useNavigate, useParams } from 'react-router-dom';
 import { getProject } from '../../functions/projectAPI';
+import { handleResponse } from '../../functions/handleResponse';
 
 function EditProject() {
   const navigate = useNavigate();
@@ -11,8 +12,9 @@ function EditProject() {
 
   useEffect(() => {
     getProject(slug).then(response => {
-      if (response && response.status === 200) setProject(response.data)
-      if (response && response.status === 404) navigate('/project-not-found')
+      handleResponse(response, navigate, () => {
+        setProject(response.data)
+      })
     })
   }, [slug])
 
