@@ -9,23 +9,37 @@ import { handleResponse } from '../functions/handleResponse'
 function Home() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([])
-  const [sortBy, setSortBy] = useState('newest')
-  const [searchText, setSearchText] = useState('')
+  const [query, setQuery] = useState({
+    sortBy: 'newest',
+    searchText: ''
+  })
 
-  async function getAndSetProjects(searchText = '', sortBy = '') {
-    getProjects(searchText, sortBy)
+  async function getAndSetProjects(query) {
+    getProjects(query.searchText, query.sortBy)
       .then(response => {
         handleResponse(response, navigate, () => {
           setProjects(response.data.projects)
-        }, () => {setProjects([])}, () => {setProjects([])})
+        }, () => { setProjects([]) }, () => { setProjects([]) })
       })
   }
 
   useEffect(() => {
-    getAndSetProjects(searchText, sortBy);
-  }, [searchText, sortBy])
+    getAndSetProjects(query);
+  }, [query])
 
+  const handleSearch = (e) => {
+    setQuery(prevQuery => ({
+      ...prevQuery,
+      searchText: e.target.value,
+    }))
+  }
 
+  const handleSort = (e) => {
+    setQuery(prevQuery => ({
+      ...prevQuery,
+      sortBy: e.target.value,
+    }))
+  }
 
   return (
     <div className="wrapper w-full min-h-screen bg-gray-50">
@@ -35,12 +49,12 @@ function Home() {
           <Container>
             <div className="flex justify-between items-center max-[400px]:flex-wrap gap-[20px]">
               <input type="text" placeholder='Search'
-                onChange={(e) => { setSearchText(e.target.value); setTimeout(() => getAndSetProjects(e.target.value, sortBy), 0) }}
+                onChange={handleSearch} value={query.searchText}
                 className="max-w-[400px] w-full p-[10px] border border-gray-500 focus:outline-blue-400 rounded-[3px] 
               text-base font-normal text-gray-900 placeholder:text-gray-500 leading-tight" />
 
               <select
-                onChange={(e) => { setSortBy(e.target.value); setTimeout(() => getAndSetProjects(searchText, e.target.value), 0) }} value={sortBy}
+                onChange={handleSort} value={query.sortBy}
                 className="min-[400px]:max-w-[200px] w-full p-[10px] border border-gray-500 focus:outline-blue-400 rounded-[3px] 
               text-base font-normal text-gray-900">
                 <option value="newest">Newest to oldest</option>
@@ -58,7 +72,7 @@ function Home() {
               {(projects.length === 0) && <div className="mx-auto my-3 text-2xl text-gray-500">Projects not found</div>}
               {projects.map(project => {
                 return (
-                  <ProjectItem key={project.slug} projectData={project} onDelete={() => { getAndSetProjects(searchText, sortBy) }} />
+                  <ProjectItem key={project.slug} projectData={project} onDelete={() => { console.log(2); getAndSetProjects(query.searchText, query.sortBy) }} />
                 )
               })}
             </div>

@@ -1,12 +1,14 @@
-import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Task, TaskDocument } from "../schemas/task.schema";
 import { Model } from "mongoose";
 import { TaskDto } from "src/interfaces/task.interface";
 import { InjectModel } from "@nestjs/mongoose";
+import { HttpExceptionErrors } from "src/customs.exception";
 
 @Injectable()
 export class TasksService {
   constructor(@InjectModel(Task.name) private readonly taskModel: Model<TaskDocument>) { }
+  private readonly logger = new Logger(TasksService.name)
 
   async findAllInProject(user_id: string, project_id: string, sortBy?: string, searchText?: string): Promise<TaskDocument[]> {
     let searchQuery: any = { user_id, project_id };
@@ -31,17 +33,17 @@ export class TasksService {
       }
     }
     const tasks = await this.taskModel.find(searchQuery).sort(sortQuery).select({ _id: 0, __v: 0, project_id: 0, user_id: 0}).exec();
-    if (tasks.length < 1) {
-      throw new HttpException("Tasks not found", HttpStatus.NOT_FOUND);
-    }
+    this.logger.log(`Get tasks with user_id '${user_id}' and project_id '${project_id}'`);
     return tasks;
   }
-
-  async findByNumberAndProjectId(user_id: string, project_id: string , number: number): Promise<TaskDocument> {
+  
+  async findByNumberAndProjectId(user_id: string, project_id: string, number: number): Promise<TaskDocument> {
     const task = await this.taskModel.findOne({user_id, number, project_id}).exec();
     if (!task) {
+      this.logger.error(`Failed to read task: Task with number '${number}' and project_id '${project_id}', user_id '${user_id}' does not exist`);
       throw new HttpException("Task not found", HttpStatus.NOT_FOUND);
     }
+    this.logger.log(`Get task with number '${number}' and project_id '${project_id}', user_id '${user_id}'`);
     return task;
   }
 
@@ -56,8 +58,10 @@ export class TasksService {
     if ('end_date' in taskDto && taskDto.end_date !== '') taskDto.end_date = this.convertDateStringToDate(taskDto.end_date)
     const createdTask = await this.taskModel.create(taskDto);
     if (!createdTask) {
-      throw new HttpException('Task not created', HttpStatus.BAD_REQUEST);
+      this.logger.error(`Failed to create task: Mongo not created the task '${taskDto.name}'`);
+      throw new HttpException('Project not created', HttpStatus.BAD_REQUEST);
     }
+    this.logger.log(`Created task with id '${createdTask.id}'`);
     return await this.taskModel.findById(createdTask._id).select({ _id: 0, __v: 0, project_id: 0, user_id: 0}).exec();
   }
 
@@ -66,7 +70,13 @@ export class TasksService {
     if ('start_date' in taskDto) taskDto.start_date = this.convertDateStringToDate(taskDto.start_date)
     if ('end_date' in taskDto) taskDto.end_date = this.convertDateStringToDate(taskDto.end_date)
 
-    return await this.taskModel.findOneAndUpdate({user_id, number, project_id}, taskDto, {new: true}).select({ _id: 0, __v: 0, project_id: 0, user_id: 0}).exec();
+    const updateTask = await this.taskModel.findOneAndUpdate({user_id, number, project_id}, taskDto, {new: true}).select({ _id: 0, __v: 0, project_id: 0, user_id: 0}).exec();
+    if (!updateTask) {
+      this.logger.error(`Failed to update task: Mongo not updated the task '${taskDto.name}'`);
+      throw new HttpException('Project not created', HttpStatus.BAD_REQUEST);
+    }
+    this.logger.log(`Updated task with id '${updateTask.id}'`);
+    return updateTask;
   }
   
   async delete(user_id: string, project_id: string , number: number): Promise<TaskDocument> {
@@ -82,7 +92,6 @@ export class TasksService {
 
   private TaskValidation(taskDto: TaskDto) {
     const { name, description, status, priority, start_date, end_date } = taskDto;
-    // console.log(taskDto, name, description, status, priority, start_date, end_date);
     
     const errors: Record<string, string> = {};
 
@@ -125,8 +134,10 @@ export class TasksService {
       }
     }
 
-    if (Object.keys(errors).length > 0)
-      throw new HttpException({ errors }, HttpStatus.BAD_REQUEST);
+    if (Object.keys(errors).length > 0) {
+      this.logger.error(`Task validation failed`, `name: ${name}, description: ${description}`, errors)
+      throw new HttpExceptionErrors('Task validation failed', HttpStatus.BAD_REQUEST, errors);
+    }
   }
 
   private validateDate(dateString): boolean {

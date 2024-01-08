@@ -2,9 +2,14 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
+import { HttpExceptionFilter } from './http-exception.filter';
+import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
+  const logger = new Logger('NestApplication');
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   app.enableCors({
     credentials: true,
@@ -16,6 +21,6 @@ async function bootstrap() {
   const port = config.get<number>('port');
   
   await app.listen(port);
-  console.log('http://localhost:' + port);
+  logger.log('http://localhost:' + port);
 }
 bootstrap();

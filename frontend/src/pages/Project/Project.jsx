@@ -18,28 +18,30 @@ function Project() {
   const [project, setProject] = useState(null)
   const [tasks, setTasks] = useState([]);
 
-  const [sortBy, setSortBy] = useState('newest')
-  const [searchText, setSearchText] = useState('')
+  const [query, setQuery] = useState({
+    sortBy: 'newest',
+    searchText: ''
+  })
 
   useEffect(() => {
     getProject(slug).then(response => {
       handleResponse(response, navigate, () => {
         setProject(response.data);
-        getAndSetTasks(searchText, sortBy)
       }, emptyFunction, () => { navigate('/project-not-found') })
     })
   }, [slug])
 
-  async function getAndSetTasks(searchText = '', sortBy = '') {
-    getTasks(slug, searchText, sortBy).then(response => {
+  async function getAndSetTasks(query) {
+    getTasks(slug, query.searchText, query.sortBy).then(response => {
       handleResponse(response, navigate, () => {
         setTasks(response.data.tasks)
       }, () => { setTasks([]) }, () => { setTasks([]) })
     })
   }
+
   useEffect(() => {
-    getAndSetTasks(searchText, sortBy);
-  }, [searchText, sortBy])
+    getAndSetTasks(query);
+  }, [query])
 
   const handleDelete = async (e) => {
     e.preventDefault();
@@ -76,9 +78,23 @@ function Project() {
           message: `Task "${taskData.name}" was deleted successfully.`,
           status: "success",
         }])
-        getAndSetTasks(searchText, sortBy)
+        getAndSetTasks(query)
       })
     })
+  }
+
+  const handleSearch = (e) => {
+    setQuery(prevQuery => ({
+      ...prevQuery,
+      searchText: e.target.value,
+    }))
+  }
+
+  const handleSort = (e) => {
+    setQuery(prevQuery => ({
+      ...prevQuery,
+      sortBy: e.target.value,
+    }))
   }
 
   if (!project) return;
@@ -114,17 +130,17 @@ function Project() {
                 </div>
               </div>
 
-              {(tasks.length !== 0 || searchText.length !== 0) ? (
+              {(tasks.length !== 0 || query.searchText.length !== 0) ? (
                 <>
                   <h2 className="self-stretch text-gray-900 text-[32px] font-bold leading-9">Tasks</h2>
                   <div className="flex justify-between items-center max-[400px]:flex-wrap gap-[20px]">
                     <input type="text" placeholder='Search'
-                      onChange={(e) => { setSearchText(e.target.value); setTimeout(() => getAndSetTasks(e.target.value, sortBy), 0) }}
+                      onChange={handleSearch} value={query.searchText}
                       className="max-w-[400px] w-full p-[10px] border border-gray-500 focus:outline-blue-400 rounded-[3px] 
               text-base font-normal text-gray-900 placeholder:text-gray-500 leading-tight" />
 
                     <select
-                      onChange={(e) => { setSortBy(e.target.value); setTimeout(() => getAndSetTasks(searchText, e.target.value), 0) }} value={sortBy}
+                      onChange={handleSort} value={query.sortBy}
                       className="min-[400px]:max-w-[200px] w-full p-[10px] border border-gray-500 focus:outline-blue-400 rounded-[3px] 
               text-base font-normal text-gray-900">
                       <option value="newest">Newest to oldest</option>
