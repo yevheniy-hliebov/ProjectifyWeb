@@ -81,7 +81,7 @@ export class ProjectsService {
     return project;
   }
   
-  async findAll(user_id: string, sortBy?: string, searchText?: string): Promise<Project[]> {
+  async findAll(user_id: string, sortBy?: string, searchText?: string, skip?: number, limit?: number) {
     let searchQuery: any = { user_id };
     
     if (searchText) {
@@ -104,9 +104,11 @@ export class ProjectsService {
       }
     }
     
-    const projects = await this.projectModel.find(searchQuery).sort(sortQuery).select({ _id: 0, user_id: 0, __v: 0 }).exec()
-    this.logger.log(`Get projects with user_id '${user_id}'`);
-    return projects;
+    const projects = await this.projectModel.find(searchQuery).sort(sortQuery).skip(skip).limit(limit).select({ _id: 0, user_id: 0, __v: 0 }).exec()
+    const countProjects = await this.projectModel.countDocuments(searchQuery);
+    const countPages = Math.round(countProjects / limit);
+    this.logger.log(`Get projects [count=${projects.length}] with user_id '${user_id}', page: ${skip / limit + 1}, limit: ${limit}`);
+    return { count: projects.length, projects, page: skip / limit + 1, count_pages: countPages };
   }
 
   async update(id: string, oldSlug: string, projectData: ProjectData) {
@@ -144,6 +146,13 @@ export class ProjectsService {
     const deleteTasksResult = await this.taskModel.deleteMany({project_id: id});
     this.logger.log(`Deleted project with id '${id}'${deleteTasksResult.deletedCount > 0 ? ` and deleted ${deleteTasksResult.deletedCount} tasks` : ''}`);
     return project;
+  }
+  
+  async getCountPages(user_id: string, limit: number) {
+    const countProjects = await this.projectModel.countDocuments({user_id});
+    const countPages = Math.round(countProjects / limit);
+    this.logger.log(`Get the number of pages in table project with user_id ${user_id} - pages_count: ${countPages}, limit ${limit}`);
+    return countPages;
   }
 
   private ProjectValidation(name: string, isExistingProject, description: string) {

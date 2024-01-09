@@ -10,7 +10,7 @@ export class TasksService {
   constructor(@InjectModel(Task.name) private readonly taskModel: Model<TaskDocument>) { }
   private readonly logger = new Logger(TasksService.name)
 
-  async findAllInProject(user_id: string, project_id: string, sortBy?: string, searchText?: string): Promise<TaskDocument[]> {
+  async findAllInProject(user_id: string, project_id: string, sortBy?: string, searchText?: string, skip?: number, limit?: number) {
     let searchQuery: any = { user_id, project_id };
 
     if (searchText) {
@@ -20,7 +20,6 @@ export class TasksService {
         { description: { $regex: searchRegex } }
       ]
     }
-
 
     let sortQuery = {};
     if (sortBy) {
@@ -32,9 +31,12 @@ export class TasksService {
         default: break;
       }
     }
-    const tasks = await this.taskModel.find(searchQuery).sort(sortQuery).select({ _id: 0, __v: 0, project_id: 0, user_id: 0}).exec();
-    this.logger.log(`Get tasks with user_id '${user_id}' and project_id '${project_id}'`);
-    return tasks;
+    const tasks = await this.taskModel.find(searchQuery).sort(sortQuery).skip(skip).limit(limit).select({ _id: 0, __v: 0, project_id: 0, user_id: 0}).exec();
+    const countProjects = await this.taskModel.countDocuments(searchQuery);
+    const countPages = Math.round(countProjects / limit);
+    
+    this.logger.log(`Get tasks [count=${tasks.length}] with user_id '${user_id}' and project_id '${project_id}', page: ${skip / limit + 1}, limit: ${limit}`);
+    return { count: tasks.length, tasks, page: skip / limit + 1, count_pages: countPages };
   }
   
   async findByNumberAndProjectId(user_id: string, project_id: string, number: number): Promise<TaskDocument> {
