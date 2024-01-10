@@ -34,6 +34,20 @@ _Prerequisite: Completion of the Basic Level_
 - Add authentication and authorization using JWT.
 - Add a middleware for error handling and logging.
 
+## Advanced level:
+
+_Prerequisite: Completion of the Intermediate Level_
+
+**Client-side:**
+- Implement the ability to upload, view, and delete images for projects and tasks.
+- Integrate pagination and filtering for lists.
+- Add animations for transitions between pages and state changes of components.
+
+**Server-side:**
+- Implement file system operations for image uploading and deletion.
+- Document the API using Swagger, including request and response models.
+- Optimize database queries to improve overall performance and speed.
+
 # Backend (server-side)
 
 ```bash
