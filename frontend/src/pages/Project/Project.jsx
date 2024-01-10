@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Button from '../../components/Button';
 import { deleteProject, getProject } from '../../functions/projectAPI';
 import { formatDate } from '../../functions/formatDate';
@@ -8,20 +8,25 @@ import Container from '../../components/Container';
 import { NotificationContext } from '../../components/Notifications';
 import { deleteTask, getTasks } from '../../functions/taskApi';
 import { handleResponse } from '../../functions/handleResponse';
+import Pagination from '../../components/Pagination';
 
 const emptyFunction = () => { };
+const sortValuesList = ['newest', 'oldest', 'alphabetical', 'reverseAlphabetical']
 
 function Project() {
   const navigate = useNavigate();
   const [notificationsParams, setNotificationsParams] = useContext(NotificationContext)
+  const [queryParams, setQueryParams] = useSearchParams();
+  const page = queryParams.get('page')
+  const sortByParam = queryParams.get('sortBy')
+  const searchTextParam = queryParams.get('searchText')
   const { slug } = useParams();
   const [project, setProject] = useState(null)
   const [tasks, setTasks] = useState([]);
-
-  const [query, setQuery] = useState({
-    sortBy: 'newest',
-    searchText: ''
-  })
+  const [currentPage, setCurrentPage] = useState((page && !isNaN(page) && Number(page) > 0) ? Number(page) : 1)
+  const [pagesCount, setPagesCount] = useState(0);
+  const [sortBy, setSortBy] = useState(sortValuesList.includes(sortByParam) ? sortByParam : sortValuesList[0])
+  const [searchText, setSearchText] = useState(searchTextParam ? searchTextParam : '')
 
   useEffect(() => {
     getProject(slug).then(response => {
@@ -31,17 +36,30 @@ function Project() {
     })
   }, [slug])
 
-  async function getAndSetTasks(query) {
-    getTasks(slug, query.searchText, query.sortBy).then(response => {
+  async function getAndSetTasks() {
+    getTasks(slug, currentPage, searchText, sortBy).then(response => {
       handleResponse(response, navigate, () => {
         setTasks(response.data.tasks)
+        setPagesCount(response.data.pages_count)
       }, () => { setTasks([]) }, () => { setTasks([]) })
     })
   }
 
   useEffect(() => {
-    getAndSetTasks(query);
-  }, [query])
+    const query = {}
+    if (currentPage !== 1) {
+      query.page = currentPage;
+    }
+    if (sortBy !== sortValuesList[0]) {
+      query.sortBy = sortBy;
+    }
+    if (searchText !== '') {
+      query.searchText = searchText;
+    }
+    setQueryParams(query)
+    getAndSetTasks();
+    scrollToTop();
+  }, [currentPage, sortBy, searchText])
 
   const handleDelete = async (e) => {
     e.preventDefault();
@@ -78,23 +96,17 @@ function Project() {
           message: `Task "${taskData.name}" was deleted successfully.`,
           status: "success",
         }])
-        getAndSetTasks(query)
+        getAndSetTasks()
       })
     })
   }
 
   const handleSearch = (e) => {
-    setQuery(prevQuery => ({
-      ...prevQuery,
-      searchText: e.target.value,
-    }))
+    setSearchText(e.target.value)
   }
 
   const handleSort = (e) => {
-    setQuery(prevQuery => ({
-      ...prevQuery,
-      sortBy: e.target.value,
-    }))
+    setSortBy(e.target.value)
   }
 
   if (!project) return;
@@ -130,17 +142,17 @@ function Project() {
                 </div>
               </div>
 
-              {(tasks.length !== 0 || query.searchText.length !== 0) ? (
+              {(tasks.length !== 0 || searchText.length !== 0) ? (
                 <>
                   <h2 className="self-stretch text-gray-900 text-[32px] font-bold leading-9">Tasks</h2>
                   <div className="flex justify-between items-center max-[400px]:flex-wrap gap-[20px]">
                     <input type="text" placeholder='Search'
-                      onChange={handleSearch} value={query.searchText}
+                      onChange={handleSearch} value={searchText}
                       className="max-w-[400px] w-full p-[10px] border border-gray-500 focus:outline-blue-400 rounded-[3px] 
               text-base font-normal text-gray-900 placeholder:text-gray-500 leading-tight" />
 
                     <select
-                      onChange={handleSort} value={query.sortBy}
+                      onChange={handleSort} value={sortBy}
                       className="min-[400px]:max-w-[200px] w-full p-[10px] border border-gray-500 focus:outline-blue-400 rounded-[3px] 
               text-base font-normal text-gray-900">
                       <option value="newest">Newest to oldest</option>
@@ -189,6 +201,7 @@ function Project() {
                   </div>
                 </>
               ) : null}
+              <Pagination currentPage={currentPage} pagesCount={pagesCount} setCurrentPage={setCurrentPage} />
             </div>
           ) : (
             <p>LOADING...</p>
@@ -197,6 +210,13 @@ function Project() {
       </div>
     </div>
   )
+}
+
+function scrollToTop() {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
 }
 
 export default Project

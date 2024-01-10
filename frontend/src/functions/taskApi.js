@@ -11,13 +11,14 @@ export async function createTask(taskDto, project_slug) {
   }).catch(err => { return err.response })
 } 
 
-export async function getTasks(project_slug, searchText = '', sortBy = '') {
+export async function getTasks(project_slug, page, searchText = '', sortBy = '') {
   const accessToken = getCookie('access-token');
   if (!accessToken) {
     return "Unauthorized"
   }
 
   let queryParams = [];
+  if (page) queryParams.push(`page=${page}`)
   if (searchText !== '') queryParams.push(`searchText=${searchText}`);
   if (sortBy !== '') queryParams.push(`sortBy=${sortBy}`);
   let query = queryParams.length > 0 ? '?' + queryParams.join('&') : '';

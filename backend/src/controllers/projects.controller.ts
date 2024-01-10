@@ -9,7 +9,7 @@ export class ProjectsController {
   private readonly limitProjects = 10;
 
   @Get()
-  async findAll(@Request() req, @Query('page') page?: number, @Query('sortBy') sortBy?: string, @Query('searchText') searchText?: string): Promise<{ count: number, projects: Project[], page: number, count_pages: number }> {
+  async findAll(@Request() req, @Query('page') page?: number, @Query('sortBy') sortBy?: string, @Query('searchText') searchText?: string): Promise<{ count: number, projects: Project[], page: number, pages_count: number }> {
     const user_id = req.user.id;
     let skip = 0;
     

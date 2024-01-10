@@ -1,13 +1,14 @@
 import axios from "axios"
 import { getCookie } from "./get-cookie";
 
-export async function getProjects(searchText = '', sortBy = '') {
+export async function getProjects(page, searchText = '', sortBy = '') {
   const accessToken = getCookie('access-token');
   if (!accessToken) {
     return "Unauthorized"
   }
 
   let queryParams = [];
+  if (page) queryParams.push(`page=${page}`)
   if (searchText !== '') queryParams.push(`searchText=${searchText}`);
   if (sortBy !== '') queryParams.push(`sortBy=${sortBy}`);
   let query = queryParams.length > 0 ? '?' + queryParams.join('&') : '';

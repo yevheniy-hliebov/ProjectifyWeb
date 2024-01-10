@@ -32,11 +32,11 @@ export class TasksService {
       }
     }
     const tasks = await this.taskModel.find(searchQuery).sort(sortQuery).skip(skip).limit(limit).select({ _id: 0, __v: 0, project_id: 0, user_id: 0}).exec();
-    const countProjects = await this.taskModel.countDocuments(searchQuery);
-    const countPages = Math.round(countProjects / limit);
+    const countTasks = await this.taskModel.countDocuments(searchQuery);
+    const pagesCount = Math.ceil(countTasks / limit);
     
     this.logger.log(`Get tasks [count=${tasks.length}] with user_id '${user_id}' and project_id '${project_id}', page: ${skip / limit + 1}, limit: ${limit}`);
-    return { count: tasks.length, tasks, page: skip / limit + 1, count_pages: countPages };
+    return { count: tasks.length, tasks, page: skip / limit + 1, pages_count: pagesCount };
   }
   
   async findByNumberAndProjectId(user_id: string, project_id: string, number: number): Promise<TaskDocument> {

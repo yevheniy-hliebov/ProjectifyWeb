@@ -10,7 +10,7 @@ export class TasksController {
   private readonly limitTasks = 25;
 
   @Get()
-  async findAllInProject(@Request() req, @Param('slug') project_slug: string, @Query('page') page?: number, @Query('sortBy') sortBy?: string, @Query('searchText') searchText?: string): Promise<{ count: number, tasks: Task[], page: number, count_pages: number }> {    
+  async findAllInProject(@Request() req, @Param('slug') project_slug: string, @Query('page') page?: number, @Query('sortBy') sortBy?: string, @Query('searchText') searchText?: string): Promise<{ count: number, tasks: Task[], page: number, pages_count: number }> {    
     const user_id = req.user.id;
 
     let skip = 0;
