@@ -22,7 +22,7 @@ export class TasksController {
     }
     skip = (page - 1) * Number(this.limitTasks);
 
-    const project_id = await this.projectsService.findIdBySlug(project_slug, user_id);
+    const project_id = await this.projectsService.findId({user_id, id: project_slug});
     const returnResult = await this.tasksService.findAllInProject(user_id, project_id, sortBy, searchText, skip, this.limitTasks)
     return returnResult;
   }
@@ -30,7 +30,7 @@ export class TasksController {
   @Post()
   async create(@Request() req, @Param('slug') project_slug: string, @Body() taskDto: TaskDto): Promise<Task> {
     const user_id = req.user.id;
-    const project_id = await this.projectsService.findIdBySlug(project_slug, user_id);
+    const project_id = await this.projectsService.findId({user_id, id: project_slug});
     taskDto.project_id = project_id;
     taskDto.user_id = req.user.id;
     return await this.tasksService.create(taskDto);
@@ -39,14 +39,14 @@ export class TasksController {
   @Get('/:number')
   async findOne(@Request() req, @Param('slug') project_slug: string, @Param('number') number: number): Promise<Task> {
     const user_id = req.user.id;
-    const project_id = await this.projectsService.findIdBySlug(project_slug, user_id);
+    const project_id = await this.projectsService.findId({user_id, id: project_slug});
     return await this.tasksService.findByNumberAndProjectId(user_id, project_id, number)
   }
   
   @Put('/:number')
   async update(@Request() req, @Param('slug') project_slug: string, @Param('number') number: number, @Body() taskDto: TaskDto): Promise<Task> {
     const user_id = req.user.id;
-    const project_id = await this.projectsService.findIdBySlug(project_slug, user_id);
+    const project_id = await this.projectsService.findId({user_id, id: project_slug});
     return await this.tasksService.update(user_id, project_id, number, taskDto)
   }
 
@@ -54,7 +54,7 @@ export class TasksController {
   @HttpCode(204)
   async delete(@Request() req, @Param('slug') project_slug: string, @Param('number') number: number): Promise<Task> {
     const user_id = req.user.id;
-    const project_id = await this.projectsService.findIdBySlug(project_slug, user_id);
+    const project_id = await this.projectsService.findId({user_id, id: project_slug});
     return await this.tasksService.delete(user_id, project_id, number)
   }
 };

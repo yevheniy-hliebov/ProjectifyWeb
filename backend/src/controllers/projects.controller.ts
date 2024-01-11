@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, Put, Delete, Query, HttpCode, Reque
 import { ProjectsService } from '../services/projects.service';
 import { Project } from '../schemas/project.schema';
 import { ProjectData } from '../interfaces/project.interface';
+import { validateDate } from '../validation/date.validation';
 
 @Controller('projects')
 export class ProjectsController {
@@ -9,45 +10,89 @@ export class ProjectsController {
   private readonly limitProjects = 10;
 
   @Get()
-  async findAll(@Request() req, @Query('page') page?: number, @Query('sortBy') sortBy?: string, @Query('searchText') searchText?: string): Promise<{ count: number, projects: Project[], page: number, pages_count: number }> {
+  async findAll(
+    @Request() req: any,
+    @Query('page') page?: number,
+    @Query('sort') sort?: string,
+    @Query('search') search?: string,
+    @Query('has_description') hasDescription?: string,
+    @Query('no_description') noDescription?: string,
+    @Query('created') created?: string,
+    @Query('updated') updated?: string,
+  ) {
     const user_id = req.user.id;
-    let skip = 0;
-    
-    if(isNaN(page) || page < 1) {
-      page = 1
-    } else {
-      page = Number(page);
+    page = (isNaN(page) || page < 1) ? 1 : Number(page);
+    const skip = (page - 1) * this.limitProjects;
+
+    const filter: any = { user_id };
+    if (hasDescription === 'true' || hasDescription === '') filter.description = { $ne: '' }
+    if (noDescription === 'true' || noDescription === '') filter.description = ''
+    if ((hasDescription === 'true' || hasDescription === '') && (noDescription === 'true' || noDescription === '')) {
+      if ('description' in filter) delete filter.description
     }
-    skip = (page - 1) * Number(this.limitProjects);
-    
-    const findResult = await this.projectsService.findAll(user_id, sortBy, searchText, skip, this.limitProjects);
-    return findResult;
+    if (created) {
+      let [gteDate, lteDate] = created.split(/\,/);
+      const createdFilter: any = {};
+      if (validateDate(gteDate)) {
+        createdFilter.$gte = new Date(gteDate);
+      }
+      if (validateDate(lteDate)) {
+        createdFilter.$lte = new Date(lteDate);
+      }
+      if (Object.keys(createdFilter).length > 1) {
+        filter.createdAt = createdFilter;
+      }
+    }
+    if (updated) {
+      let [gteDate, lteDate] = updated.split(/\,/);
+      const updatedFilter: any = {};
+      if (validateDate(gteDate)) {
+        updatedFilter.$gte = new Date(gteDate);
+      }
+      if (validateDate(lteDate)) {
+        updatedFilter.$lte = new Date(lteDate);
+      }
+      if (Object.keys(updatedFilter).length > 1) {
+        filter.updatedAt = updatedFilter;
+      }
+    }
+
+    return await this.projectsService.findAll({
+      skip: skip,
+      limit: this.limitProjects,
+      sort: sort,
+      search: {
+        searchText: search,
+        fields: ['name', 'description']
+      },
+      filter: filter
+    })
   }
 
   @Get('pages-count')
   async getCountPages(@Request() req) {
-    const user_id = req.user.id;  
-    return { pages_count: await this.projectsService.getCountPages(user_id, this.limitProjects)};
+    const user_id = req.user.id;
+    return { pages_count: await this.projectsService.getCountPages({ user_id }, this.limitProjects) };
   }
-  
+
   @Get(':slug')
   async read(@Request() req, @Param('slug') slug: string): Promise<Project> {
     const user_id = req.user.id;
-    return await this.projectsService.findBySlug(slug, user_id);
+    return await this.projectsService.findOne({ user_id, slug });
   }
-  
+
   @Post()
   async create(@Body() projectData, @Request() req): Promise<Project> {
     const user_id = req.user.id;
     projectData.user_id = user_id;
     return await this.projectsService.create(projectData);
   }
-  
+
 
   @Put(':slug')
   async update(@Param('slug') slug: string, @Body() projectData: ProjectData, @Request() req): Promise<Project> {
     const user_id = req.user.id;
-    const id = await this.projectsService.findIdBySlug(slug, user_id);
+    const id = await this.projectsService.findId({user_id, slug});
     return await this.projectsService.update(id, slug, projectData);
   }
 
@@ -55,7 +100,7 @@ export class ProjectsController {
   @HttpCode(204)
   async delete(@Param('slug') slug: string, @Request() req) {
     const user_id = req.user.id;
-    const id = await this.projectsService.findIdBySlug(slug, user_id);
+    const id = await this.projectsService.findId({user_id, slug});
     return await this.projectsService.delete(id);
   }
 }
