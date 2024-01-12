@@ -5,7 +5,7 @@ import { formatDate } from '../../functions/formatDate';
 import Header from '../../components/Header';
 import Container from '../../components/Container';
 import { NotificationContext } from '../../components/Notifications';
-import { deleteTask, getTask, getTasks } from '../../functions/taskApi';
+import { deleteTask, getTask } from '../../functions/taskApi';
 import { handleResponse } from '../../functions/handleResponse';
 
 const emptyFunction = () => { };
@@ -24,7 +24,7 @@ function Task() {
         navigate('/task-not-found')
       })
     })
-  }, [slug])
+  }, [slug, number])
 
   const handleDeleteTask = async (e, taskData) => {
     e.preventDefault();

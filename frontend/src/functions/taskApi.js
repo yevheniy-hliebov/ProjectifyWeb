@@ -11,7 +11,7 @@ export async function createTask(taskDto, project_slug) {
   }).catch(err => { return err.response })
 } 
 
-export async function getTasks(project_slug, page, searchText = '', sortBy = '') {
+export async function getTasks(project_slug, page, search = '', sort = '') {
   const accessToken = getCookie('access-token');
   if (!accessToken) {
     return "Unauthorized"
@@ -19,8 +19,8 @@ export async function getTasks(project_slug, page, searchText = '', sortBy = '')
 
   let queryParams = [];
   if (page) queryParams.push(`page=${page}`)
-  if (searchText !== '') queryParams.push(`searchText=${searchText}`);
-  if (sortBy !== '') queryParams.push(`sortBy=${sortBy}`);
+  if (search !== '') queryParams.push(`search=${search}`);
+  if (sort !== '') queryParams.push(`sort=${sort}`);
   let query = queryParams.length > 0 ? '?' + queryParams.join('&') : '';
 
   return axios.get(`/projects/${project_slug}/tasks` + query, { headers: { "Authorization": accessToken } }).then(response => {

@@ -18,15 +18,15 @@ function Project() {
   const [notificationsParams, setNotificationsParams] = useContext(NotificationContext)
   const [queryParams, setQueryParams] = useSearchParams();
   const page = queryParams.get('page')
-  const sortByParam = queryParams.get('sortBy')
-  const searchTextParam = queryParams.get('searchText')
+  const sortParam = queryParams.get('sort')
+  const searchParam = queryParams.get('search')
   const { slug } = useParams();
   const [project, setProject] = useState(null)
   const [tasks, setTasks] = useState([]);
   const [currentPage, setCurrentPage] = useState((page && !isNaN(page) && Number(page) > 0) ? Number(page) : 1)
   const [pagesCount, setPagesCount] = useState(0);
-  const [sortBy, setSortBy] = useState(sortValuesList.includes(sortByParam) ? sortByParam : sortValuesList[0])
-  const [searchText, setSearchText] = useState(searchTextParam ? searchTextParam : '')
+  const [sort, setSort] = useState(sortValuesList.includes(sortParam) ? sortParam : sortValuesList[0])
+  const [search, setSearch] = useState(searchParam ? searchParam : '')
 
   useEffect(() => {
     getProject(slug).then(response => {
@@ -37,7 +37,7 @@ function Project() {
   }, [slug])
 
   async function getAndSetTasks() {
-    getTasks(slug, currentPage, searchText, sortBy).then(response => {
+    getTasks(slug, currentPage, search, sort).then(response => {
       handleResponse(response, navigate, () => {
         setTasks(response.data.tasks)
         setPagesCount(response.data.pages_count)
@@ -50,16 +50,16 @@ function Project() {
     if (currentPage !== 1) {
       query.page = currentPage;
     }
-    if (sortBy !== sortValuesList[0]) {
-      query.sortBy = sortBy;
+    if (sort !== sortValuesList[0]) {
+      query.sort = sort;
     }
-    if (searchText !== '') {
-      query.searchText = searchText;
+    if (search !== '') {
+      query.search = search;
     }
     setQueryParams(query)
     getAndSetTasks();
     scrollToTop();
-  }, [currentPage, sortBy, searchText])
+  }, [currentPage, sort, search])
 
   const handleDelete = async (e) => {
     e.preventDefault();
@@ -84,7 +84,7 @@ function Project() {
   const handleDeleteTask = async (e, taskData) => {
     e.preventDefault();
     deleteTask(project.slug, taskData.number).then(response => {
-      handleResponse(response, navigate, emptyFunction, emptyFunction, () => {
+      handleResponse(response, useNavigate, emptyFunction, emptyFunction, () => {
         setNotificationsParams([...notificationsParams, {
           title: `Error!`,
           message: `Failed to delete task "${taskData.name}".`,
@@ -102,11 +102,11 @@ function Project() {
   }
 
   const handleSearch = (e) => {
-    setSearchText(e.target.value)
+    setSearch(e.target.value)
   }
 
   const handleSort = (e) => {
-    setSortBy(e.target.value)
+    setSort(e.target.value)
   }
 
   if (!project) return;
@@ -142,17 +142,17 @@ function Project() {
                 </div>
               </div>
 
-              {(tasks.length !== 0 || searchText.length !== 0) ? (
+              {(tasks.length !== 0 || search.length !== 0) ? (
                 <>
                   <h2 className="self-stretch text-gray-900 text-[32px] font-bold leading-9">Tasks</h2>
                   <div className="flex justify-between items-center max-[400px]:flex-wrap gap-[20px]">
                     <input type="text" placeholder='Search'
-                      onChange={handleSearch} value={searchText}
+                      onChange={handleSearch} value={search}
                       className="max-w-[400px] w-full p-[10px] border border-gray-500 focus:outline-blue-400 rounded-[3px] 
               text-base font-normal text-gray-900 placeholder:text-gray-500 leading-tight" />
 
                     <select
-                      onChange={handleSort} value={sortBy}
+                      onChange={handleSort} value={sort}
                       className="min-[400px]:max-w-[200px] w-full p-[10px] border border-gray-500 focus:outline-blue-400 rounded-[3px] 
               text-base font-normal text-gray-900">
                       <option value="newest">Newest to oldest</option>

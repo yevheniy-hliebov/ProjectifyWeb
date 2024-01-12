@@ -10,17 +10,19 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.useGlobalFilters(new HttpExceptionFilter());
+  
+  const config = app.get(ConfigService)
+  const port = config.get<number>('port');
+  const front_url = config.get<string>('front_url');
 
   app.enableCors({
     credentials: true,
-    origin: 'http://localhost:3000',
+    origin: front_url,
     exposedHeaders: 'Authorization-Cookie',
   })
 
-  const config = app.get(ConfigService)
-  const port = config.get<number>('port');
-  
   await app.listen(port);
-  logger.log('http://localhost:' + port);
+  logger.log('PORT: ' + port);
+  logger.log('Front-end URL: ' + front_url);
 }
 bootstrap();

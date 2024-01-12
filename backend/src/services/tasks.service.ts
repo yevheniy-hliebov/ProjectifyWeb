@@ -1,30 +1,48 @@
 import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Task, TaskDocument } from "../schemas/task.schema";
 import { Model } from "mongoose";
-import { TaskDto } from "src/interfaces/task.interface";
+import { TaskDto } from "../interfaces/task.interface";
 import { InjectModel } from "@nestjs/mongoose";
-import { HttpExceptionErrors } from "src/customs.exception";
-import { validateDate } from "src/validation/date.validation";
+import { HttpExceptionErrors } from "../customs.exception";
+import { validateDate } from "../validation/date.validation";
+import { FindAllOptions } from "../types/find-all-options.type";
 
 @Injectable()
 export class TasksService {
   constructor(@InjectModel(Task.name) private readonly taskModel: Model<TaskDocument>) { }
   private readonly logger = new Logger(TasksService.name)
 
-  async findAllInProject(user_id: string, project_id: string, sortBy?: string, searchText?: string, skip?: number, limit?: number) {
-    let searchQuery: any = { user_id, project_id };
+  async findAll(options: FindAllOptions) {
+    let { skip, limit, sort, search, filter, select } = options;
+    
+    skip = skip !== undefined ? skip : 0;
+    limit = limit !== undefined ? limit : 0;
+    filter = filter !== undefined ? filter : {};
+    select = select !== undefined ? select : {
+      _id: 0, user_id: 0, __v: 0
+    }
 
-    if (searchText) {
-      const searchRegex = new RegExp(searchText, 'i'); // 'i' for case-insensitive search
-      searchQuery.$or = [
-        { name: { $regex: searchRegex } },
-        { description: { $regex: searchRegex } }
-      ]
+    let filterQuery: any = filter;
+    if (search !== undefined && 'searchText' in search) {
+      if (search.searchText && search.searchText != '') {
+        const searchRegex = new RegExp(search.searchText, 'i'); // 'i' for case-insensitive search
+        if ('fields' in search) {
+          const orList = []
+          search.fields.forEach(field => {
+            orList.push({ [field]: { $regex: searchRegex } })
+          });
+          filterQuery.$or = orList;
+        } else {
+          filterQuery.$or = [
+            { name: { $regex: searchRegex } }
+          ]
+        }
+      }
     }
 
     let sortQuery = {};
-    if (sortBy) {
-      switch (sortBy) {
+    if (sort) {
+      switch (sort) {
         case 'newest': sortQuery = { createdAt: -1 }; break;
         case 'oldest': sortQuery = { createdAt: 1 }; break;
         case 'alphabetical': sortQuery = { name: 1 }; break;
@@ -32,21 +50,21 @@ export class TasksService {
         default: break;
       }
     }
-    const tasks = await this.taskModel.find(searchQuery).sort(sortQuery).skip(skip).limit(limit).select({ _id: 0, __v: 0, project_id: 0, user_id: 0}).exec();
-    const countTasks = await this.taskModel.countDocuments(searchQuery);
-    const pagesCount = Math.ceil(countTasks / limit);
-    
-    this.logger.log(`Get tasks [count=${tasks.length}] with user_id '${user_id}' and project_id '${project_id}', page: ${skip / limit + 1}, limit: ${limit}`);
+
+    const tasks = await this.taskModel.find(filterQuery).sort(sortQuery).skip(skip).limit(limit).select(select).exec()
+    const countProjects = await this.taskModel.countDocuments(filterQuery);
+    const pagesCount = Math.ceil(countProjects / limit);
+    this.logger.log(`Get tasks [count=${tasks.length}] ${this.objectToString(filter)} | page: ${skip / limit + 1}, limit: ${limit}`);
     return { count: tasks.length, tasks, page: skip / limit + 1, pages_count: pagesCount };
   }
   
-  async findByNumberAndProjectId(user_id: string, project_id: string, number: number): Promise<TaskDocument> {
-    const task = await this.taskModel.findOne({user_id, number, project_id}).exec();
+  async findOne(filter: object, select = {}): Promise<TaskDocument> {
+    const task = await this.taskModel.findOne(filter).select(select).exec()
     if (!task) {
-      this.logger.error(`Failed to read task: Task with number '${number}' and project_id '${project_id}', user_id '${user_id}' does not exist`);
+      this.logger.error(`Failed to read task: Task with ${this.objectToString(filter)} does not exist`);
       throw new HttpException("Task not found", HttpStatus.NOT_FOUND);
     }
-    this.logger.log(`Get task with number '${number}' and project_id '${project_id}', user_id '${user_id}'`);
+    this.logger.log(`Read task with name '${task.name}'`);
     return task;
   }
 
@@ -154,5 +172,16 @@ export class TasksService {
       }
     }
     return dateString;
+  }
+
+  private objectToString(obj: object): string {
+    let text = ''
+    Object.keys(obj).forEach((key, index) => {
+      text += `${key} '${obj[key]}'`;
+      if ((index !== Object.keys(obj).length - 1) && (index < Object.keys(obj).length - 1)) {
+        text += ', ';
+      }
+    });
+    return text;
   }
 };

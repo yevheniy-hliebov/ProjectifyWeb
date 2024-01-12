@@ -13,16 +13,16 @@ function Home() {
   const navigate = useNavigate();
   const [queryParams, setQueryParams] = useSearchParams();
   const page = queryParams.get('page')
-  const sortByParam = queryParams.get('sortBy')
-  const searchTextParam = queryParams.get('searchText')
+  const sortParam = queryParams.get('sort')
+  const searchParam = queryParams.get('search')
   const [projects, setProjects] = useState([])
   const [currentPage, setCurrentPage] = useState((page && !isNaN(page) && Number(page) > 0) ? Number(page) : 1)
   const [pagesCount, setPagesCount] = useState(1);
-  const [sortBy, setSortBy] = useState(sortValuesList.includes(sortByParam) ? sortByParam : sortValuesList[0])
-  const [searchText, setSearchText] = useState(searchTextParam ? searchTextParam : '')
+  const [sort, setSort] = useState(sortValuesList.includes(sortParam) ? sortParam : sortValuesList[0])
+  const [search, setSearch] = useState(searchParam ? searchParam : '')
 
   async function getAndSetProjects() {
-    getProjects(currentPage, searchText, sortBy)
+    getProjects(currentPage, search, sort)
       .then(response => {
         handleResponse(response, navigate, () => {
           setProjects(response.data.projects)
@@ -36,23 +36,23 @@ function Home() {
     if (currentPage !== 1) {
       query.page = currentPage;
     }
-    if (sortBy !== sortValuesList[0]) {
-      query.sortBy = sortBy;
+    if (sort !== sortValuesList[0]) {
+      query.sort = sort;
     }
-    if (searchText !== '') {
-      query.searchText = searchText;
+    if (search !== '') {
+      query.search = search;
     }
     setQueryParams(query)
     getAndSetProjects();
     scrollToTop();
-  }, [currentPage, sortBy, searchText])
+  }, [currentPage, sort, search])
 
   const handleSearch = (e) => {
-    setSearchText(e.target.value)
+    setSearch(e.target.value)
   }
 
   const handleSort = (e) => {
-    setSortBy(e.target.value)
+    setSort(e.target.value)
   }
 
   return (
@@ -63,12 +63,12 @@ function Home() {
           <Container>
             <div className="flex justify-between items-center max-[400px]:flex-wrap gap-[20px]">
               <input type="text" placeholder='Search'
-                onChange={handleSearch} value={searchText}
+                onChange={handleSearch} value={search}
                 className="max-w-[400px] w-full p-[10px] border border-gray-500 focus:outline-blue-400 rounded-[3px] 
               text-base font-normal text-gray-900 placeholder:text-gray-500 leading-tight" />
 
               <select
-                onChange={handleSort} value={sortBy}
+                onChange={handleSort} value={sort}
                 className="min-[400px]:max-w-[200px] w-full p-[10px] border border-gray-500 focus:outline-blue-400 rounded-[3px] 
               text-base font-normal text-gray-900">
                 <option value="newest">Newest to oldest</option>

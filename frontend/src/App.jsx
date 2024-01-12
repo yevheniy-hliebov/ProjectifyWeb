@@ -18,7 +18,7 @@ import CreateTask from './pages/Task/CreateTask';
 import axios from 'axios';
 import EditTask from './pages/Task/EditTask';
 import Task from './pages/Task/Task';
-axios.defaults.baseURL = "http://localhost:4000"
+axios.defaults.baseURL = process.env.REACT_APP_API_URL || "http://localhost:4000"
 axios.defaults.withCredentials = true
 
 export const AuthContext = createContext();

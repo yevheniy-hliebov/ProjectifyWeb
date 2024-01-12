@@ -1,7 +1,7 @@
 import axios from "axios"
 import { getCookie } from "./get-cookie";
 
-export async function getProjects(page, searchText = '', sortBy = '') {
+export async function getProjects(page, search = '', sort = '') {
   const accessToken = getCookie('access-token');
   if (!accessToken) {
     return "Unauthorized"
@@ -9,8 +9,8 @@ export async function getProjects(page, searchText = '', sortBy = '') {
 
   let queryParams = [];
   if (page) queryParams.push(`page=${page}`)
-  if (searchText !== '') queryParams.push(`searchText=${searchText}`);
-  if (sortBy !== '') queryParams.push(`sortBy=${sortBy}`);
+  if (search !== '') queryParams.push(`search=${search}`);
+  if (sort !== '') queryParams.push(`sort=${sort}`);
   let query = queryParams.length > 0 ? '?' + queryParams.join('&') : '';
 
   return axios.get('/projects' + query, { headers: { "Authorization": accessToken } }).then(response => {

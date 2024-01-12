@@ -47,6 +47,7 @@ export class ProjectsService {
     }
 
     let sortQuery = {};
+    console.log(sort);
     if (sort) {
       switch (sort) {
         case 'newest': sortQuery = { createdAt: -1 }; break;
@@ -59,7 +60,7 @@ export class ProjectsService {
     const projects = await this.projectModel.find(filterQuery).sort(sortQuery).skip(skip).limit(limit).select(select).exec()
     const countProjects = await this.projectModel.countDocuments(filterQuery);
     const pagesCount = Math.ceil(countProjects / limit);
-    this.logger.log(`Get projects [count=${projects.length}]${this.objectToString(filter)}, page: ${skip / limit + 1}, limit: ${limit}`);
+    this.logger.log(`Get projects [count=${projects.length}] ${this.objectToString(filter)} | page: ${skip / limit + 1}, limit: ${limit}`);
     return { count: projects.length, projects, page: skip / limit + 1, pages_count: pagesCount };
   }
 
