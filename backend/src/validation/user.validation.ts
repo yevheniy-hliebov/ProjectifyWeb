@@ -1,4 +1,4 @@
-import { UserDto } from "src/interfaces/user.interface";
+import { UserDto } from "../types/user.type";
 
 export function validate(userDto: UserDto) {
   const { username, email, password } = userDto;

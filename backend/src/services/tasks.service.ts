@@ -1,11 +1,11 @@
 import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Task, TaskDocument } from "../schemas/task.schema";
 import { Model } from "mongoose";
-import { TaskDto } from "../interfaces/task.interface";
+import { TaskDto } from "../types/task.type";
 import { InjectModel } from "@nestjs/mongoose";
 import { HttpExceptionErrors } from "../customs.exception";
-import { validateDate } from "../validation/date.validation";
 import { FindAllOptions } from "../types/find-all-options.type";
+import { TaskValidation } from "src/validation/task.validation";
 
 @Injectable()
 export class TasksService {
@@ -14,7 +14,7 @@ export class TasksService {
 
   async findAll(options: FindAllOptions) {
     let { skip, limit, sort, search, filter, select } = options;
-    
+
     skip = skip !== undefined ? skip : 0;
     limit = limit !== undefined ? limit : 0;
     filter = filter !== undefined ? filter : {};
@@ -57,108 +57,114 @@ export class TasksService {
     this.logger.log(`Get tasks [count=${tasks.length}] ${this.objectToString(filter)} | page: ${skip / limit + 1}, limit: ${limit}`);
     return { count: tasks.length, tasks, page: skip / limit + 1, pages_count: pagesCount };
   }
-  
-  async findOne(filter: object, select = {}): Promise<TaskDocument> {
+
+  async findOne(filter: object, select = { _id: 0, __v: 0, user_id: 0, project_id: 0 }): Promise<TaskDocument> {
     const task = await this.taskModel.findOne(filter).select(select).exec()
     if (!task) {
       this.logger.error(`Failed to read task: Task with ${this.objectToString(filter)} does not exist`);
       throw new HttpException("Task not found", HttpStatus.NOT_FOUND);
     }
-    this.logger.log(`Read task with name '${task.name}'`);
+    this.logger.log(`Read task with ${this.objectToString(filter)}`);
     return task;
   }
 
-  async create(taskDto: TaskDto): Promise<TaskDocument> {
-    this.TaskValidation(taskDto);
-    
-    const tasks = await this.taskModel.find({ project_id: taskDto.project_id }).sort({ number: -1 }).select({ number: 1 }).exec();
-    const maxNumber = tasks.length === 0 ? null : tasks[0].number;   
-    taskDto.number = maxNumber === null ? 1 : maxNumber + 1;
-    
-    if ('start_date' in taskDto && taskDto.start_date !== '') taskDto.start_date = this.convertDateStringToDate(taskDto.start_date)
-    if ('end_date' in taskDto && taskDto.end_date !== '') taskDto.end_date = this.convertDateStringToDate(taskDto.end_date)
-    const createdTask = await this.taskModel.create(taskDto);
-    if (!createdTask) {
-      this.logger.error(`Failed to create task: Mongo not created the task '${taskDto.name}'`);
-      throw new HttpException('Project not created', HttpStatus.BAD_REQUEST);
+  async findId(filter: object): Promise<string> {
+    const task = await this.taskModel.findOne(filter).select({ _id: 1 }).exec()
+    if (!task) {
+      this.logger.error(`Failed to get id of task: Task with ${this.objectToString(filter)} does not exist`);
+      throw new HttpException("Task not found", HttpStatus.NOT_FOUND);
     }
-    this.logger.log(`Created task with id '${createdTask.id}'`);
-    return await this.taskModel.findById(createdTask._id).select({ _id: 0, __v: 0, project_id: 0, user_id: 0}).exec();
+    this.logger.log(`Get id task: ${task.id}`);
+    return task._id.toString();
   }
 
-  async update(user_id: string, project_id: string , number: number, taskDto: TaskDto): Promise<TaskDocument> {
-    this.TaskValidation(taskDto);
+  async create(taskDto: TaskDto, select = { _id: 0, __v: 0, user_id: 0, project_id: 0 }): Promise<TaskDocument> {
+    const errors = TaskValidation(taskDto);
+    if (errors !== undefined) {
+      this.logger.error(`Failed to create task: validation failed`, `TaskDto: ${this.objectToString(taskDto)}`, `Errors: ${this.objectToString(errors)}`)
+      throw new HttpExceptionErrors('Task validation failed', HttpStatus.BAD_REQUEST, errors);
+    }
+
+    const tasks = await this.taskModel.find({ project_id: taskDto.project_id }).sort({ number: -1 }).select({ number: 1 }).exec();
+    const maxNumber = tasks.length === 0 ? null : tasks[0].number;
+    taskDto.number = maxNumber === null ? 1 : maxNumber + 1;
+
+    if ('start_date' in taskDto && taskDto.start_date !== '') taskDto.start_date = this.convertDateStringToDate(taskDto.start_date)
+    if ('end_date' in taskDto && taskDto.end_date !== '') taskDto.end_date = this.convertDateStringToDate(taskDto.end_date)
+
+    if ('status' in taskDto) {
+      const validStatuses = ['Not started', 'In progress', 'Done'];
+      validStatuses.forEach((validStatus, i) => {
+        if (validStatus.toLowerCase() === taskDto.status.toLowerCase()) {
+          taskDto.status = validStatus[i];
+        }
+      });
+    }
+    if ('priority' in taskDto) {
+      const validPriorities = ['Low', 'Medium', 'High'];
+      validPriorities.forEach((validPriority, i) => {
+        if (validPriority.toLowerCase() === taskDto.priority.toLowerCase()) {
+          taskDto.priority = validPriority[i];
+        }
+      });
+    }
+
+    const createdTask = await this.taskModel.create(taskDto);
+    if (!createdTask) {
+      this.logger.error(`Failed to create task: Mongo not created the task. TaskDto '${this.objectToString(taskDto)}'`);
+      throw new HttpException('Failed to create task: Mongo not created the task', HttpStatus.BAD_REQUEST);
+    }
+    this.logger.log(`Created task with id '${createdTask.id}'. TaskDto '${this.objectToString(taskDto)}`);
+    return await this.taskModel.findById(createdTask._id).select(select).exec();
+  }
+
+  async update(id: string, taskDto: TaskDto, select = { _id: 0, __v: 0, user_id: 0, project_id: 0 }): Promise<TaskDocument> {
+    const errors = TaskValidation(taskDto, 'update');
+    if (errors !== undefined) {
+      this.logger.error(`Failed to update task: validation failed`, `UpdateTaskDto: ${this.objectToString(taskDto)}`, `Errors: ${this.objectToString(errors)}`)
+      throw new HttpExceptionErrors('Task validation failed', HttpStatus.BAD_REQUEST, errors);
+    }
+
     if ('start_date' in taskDto) taskDto.start_date = this.convertDateStringToDate(taskDto.start_date)
     if ('end_date' in taskDto) taskDto.end_date = this.convertDateStringToDate(taskDto.end_date)
 
-    const updateTask = await this.taskModel.findOneAndUpdate({user_id, number, project_id}, taskDto, {new: true}).select({ _id: 0, __v: 0, project_id: 0, user_id: 0}).exec();
+    if ('status' in taskDto) {
+      const validStatuses = ['Not started', 'In progress', 'Done'];
+      validStatuses.forEach((validStatus, i) => {
+        if (validStatus.toLowerCase() === taskDto.status.toLowerCase()) {
+          taskDto.status = validStatuses[i];
+        }
+      });
+    }
+    if ('priority' in taskDto) {
+      const validPriorities = ['Low', 'Medium', 'High'];
+      validPriorities.forEach((validPriority, i) => {
+        if (validPriority.toLowerCase() === taskDto.priority.toLowerCase()) {
+          taskDto.priority = validPriorities[i];
+        }
+      });
+    }
+
+    const updateTask = await this.taskModel.findByIdAndUpdate(id, taskDto, { new: true }).select(select).exec();
     if (!updateTask) {
-      this.logger.error(`Failed to update task: Mongo not updated the task '${taskDto.name}'`);
+      this.logger.error(`Failed to update task: Mongo not updated the task. UpdateTaskDto: ${this.objectToString(taskDto)}`);
       throw new HttpException('Project not created', HttpStatus.BAD_REQUEST);
     }
-    this.logger.log(`Updated task with id '${updateTask.id}'`);
+    this.logger.log(`Updated task with id '${id}'. UpdateTaskDto: ${this.objectToString(taskDto)}`);
     return updateTask;
   }
-  
-  async delete(user_id: string, project_id: string , number: number): Promise<TaskDocument> {
-    const deletedTask = await this.taskModel.findOneAndDelete({user_id, number, project_id}).select({ _id: 0, __v: 0, project_id: 0, user_id: 0}).exec();
+
+  async delete(id: string, select = { _id: 0, __v: 0, user_id: 0, project_id: 0 }) {
+    const deletedTask: TaskDocument = Object(await this.taskModel.findByIdAndDelete(id));
     if (deletedTask) {
-      const tasks = await this.taskModel.find({ user_id, project_id }).sort({ number: -1 }).select({ number: 1 }).exec();
-      tasks.forEach((task, index) => {
-        this.taskModel.findByIdAndDelete(task._id, {number: index + 1})
+      const tasks = await this.taskModel.find({ project_id: deletedTask.project_id }).sort({ number: -1 }).select({ number: 1 }).exec();
+      let i = 1;
+      tasks.forEach((task) => {
+        this.taskModel.findByIdAndDelete(task._id, { number: i })
+        i = i + 1
       });
     }
     return deletedTask;
-  }
-
-  private TaskValidation(taskDto: TaskDto) {
-    const { name, description, status, priority, start_date, end_date } = taskDto;
-    
-    const errors: Record<string, string> = {};
-
-    if (name.length < 3) {
-      errors.name = 'The name of the task is less than 3 characters';
-    }
-    if (name.length > 50) {
-      errors.name = 'The name of the task is longer than 50 characters';
-    }
-    if (name.length === 0 || name === null || name === undefined) {
-      errors.name = 'The name of the task is required';
-    }
-    if (!(description === undefined || description !== '') && description.length > 500) {
-      errors.description = 'The description of the task is longer than 1500 characters';
-    }
-
-    if (!(status === undefined || status === '')) {
-      const validStatuses = ['Not started', 'In progress', 'Done'];
-      if (!validStatuses.includes(status)) {
-        errors.status = 'Invalid status entered for the task';
-      }
-    }
-
-    if (!(priority === undefined || priority === '')) {
-      const validPriority = ['Low', 'Medium', 'High'];
-      if (!validPriority.includes(priority)) {
-        errors.priority = 'Invalid priority entered for the task';
-      }
-    }
-
-    if (!(start_date === undefined || start_date === '')) {
-      if (!validateDate(start_date)) {
-        errors.start_date = 'Invalid start date entered for the task'
-      }
-    }
-
-    if (!(end_date === undefined || end_date === '')) {
-      if (!validateDate(end_date)) {
-        errors.end_date = 'Invalid end date entered for the task'
-      }
-    }
-
-    if (Object.keys(errors).length > 0) {
-      this.logger.error(`Task validation failed`, `name: ${name}, description: ${description}`, errors)
-      throw new HttpExceptionErrors('Task validation failed', HttpStatus.BAD_REQUEST, errors);
-    }
   }
 
   private convertDateStringToDate(dateString: string) {
@@ -177,7 +183,7 @@ export class TasksService {
   private objectToString(obj: object): string {
     let text = ''
     Object.keys(obj).forEach((key, index) => {
-      text += `${key} '${obj[key]}'`;
+      text += `${key} '${typeof obj[key] === 'object' ? JSON.stringify(obj[key]) : obj[key]}'`;
       if ((index !== Object.keys(obj).length - 1) && (index < Object.keys(obj).length - 1)) {
         text += ', ';
       }

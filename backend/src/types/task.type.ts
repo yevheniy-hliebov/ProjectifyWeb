@@ -1,5 +1,5 @@
-export interface TaskDto {
-  name: string,
+export type TaskDto = {
+  name?: string,
   description?: string;
   status?: string;
   priority?: string;

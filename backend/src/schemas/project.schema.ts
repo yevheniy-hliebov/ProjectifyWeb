@@ -11,7 +11,7 @@ export class Project {
     @Prop({ default: null, maxlength: 1500 })
     description: string;
 
-    @Prop({ unique: true })
+    @Prop({ required: true })
     slug: string;
 
     @Prop({ required: true })

@@ -29,7 +29,7 @@ function EditTask() {
         navigate('/project-not-found')
       })
     })
-  }, [slug])
+  }, [slug, number])
 
   if (!projectName || !task) return null;
   return (

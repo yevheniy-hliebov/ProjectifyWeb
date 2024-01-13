@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Body, Param, Put, Delete, Query, HttpCode, Request, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { ProjectsService } from '../services/projects.service';
 import { Project } from '../schemas/project.schema';
-import { ProjectData } from '../interfaces/project.interface';
 import { validateDate } from '../validation/date.validation';
+import { ProjectDto } from '../types/project.type';
 
 @Controller('projects')
 export class ProjectsController {
@@ -82,18 +82,19 @@ export class ProjectsController {
   }
 
   @Post()
-  async create(@Body() projectData, @Request() req): Promise<Project> {
+  async create(@Body() projectDto: ProjectDto, @Request() req): Promise<Project> {
     const user_id = req.user.id;
-    projectData.user_id = user_id;
-    return await this.projectsService.create(projectData);
+    projectDto.user_id = user_id;
+    return await this.projectsService.create(projectDto);
   }
 
 
   @Put(':slug')
-  async update(@Param('slug') slug: string, @Body() projectData: ProjectData, @Request() req): Promise<Project> {
+  async update(@Param('slug') slug: string, @Body() projectDto: ProjectDto, @Request() req): Promise<Project> {
     const user_id = req.user.id;
     const id = await this.projectsService.findId({user_id, slug});
-    return await this.projectsService.update(id, slug, projectData);
+    projectDto.user_id = user_id;
+    return await this.projectsService.update(id, projectDto);
   }
 
   @Delete(':slug')

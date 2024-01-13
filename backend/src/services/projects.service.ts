@@ -2,11 +2,12 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Project, ProjectDocument } from '../schemas/project.schema';
-import { ProjectData } from '../interfaces/project.interface';
-import slugify from 'slugify';
+import { ProjectDto } from '../types/project.type';
 import { HttpExceptionErrors } from '../customs.exception';
 import { Task, TaskDocument } from 'src/schemas/task.schema';
 import { FindAllOptions } from '../types/find-all-options.type';
+import slugify from 'slugify';
+import { ProjectValidation } from '../validation/project.validation';
 
 @Injectable()
 export class ProjectsService {
@@ -47,7 +48,6 @@ export class ProjectsService {
     }
 
     let sortQuery = {};
-    console.log(sort);
     if (sort) {
       switch (sort) {
         case 'newest': sortQuery = { createdAt: -1 }; break;
@@ -94,58 +94,76 @@ export class ProjectsService {
     return project;
   }
 
-  async create(projectData: ProjectData): Promise<ProjectDocument> {
-    const { name, description } = projectData;
+  async create(projectDto: ProjectDto): Promise<ProjectDocument> {
+    const { name, user_id } = projectDto;
 
     if (!name) {
       this.logger.error('Failed to create project: Project name cannot be null or undefined');
       throw new HttpException('Project name cannot be null or undefined', HttpStatus.BAD_REQUEST);
     }
 
-    const slugName = this.nameSlugify(name)
-    const existingProject = await this.projectModel.findOne({ slug: slugName }).exec();
-    const hasSlugConflict = existingProject;
-    this.ProjectValidation(name, hasSlugConflict, description);
+    const slugName = this.nameSlugify(name);
+    const existingProject = await this.projectModel.findOne({ user_id: user_id, slug: slugName }).exec();
+    
+    const hasSlugConflict = existingProject !== null;
+    const errors = ProjectValidation(projectDto, hasSlugConflict);
+    if (errors !== undefined) {
+      this.logger.error(`Failed to create project: validation failed`, `ProjectDto: ${this.objectToString(projectDto)}`, `Errors: ${this.objectToString(errors)}`)
+      throw new HttpExceptionErrors('Project validation failed', HttpStatus.BAD_REQUEST, errors);
+    }
 
-    projectData.slug = slugName;
-    const savedProject = await this.projectModel.create(projectData);
+    projectDto.slug = slugName;
+    const savedProject = await this.projectModel.create(projectDto);
     if (!savedProject) {
-      this.logger.error(`Failed to create project: Mongo not create the project '${name}'`);
+      this.logger.error(`Failed to create project: Mongo not create the project. ProjectDto '${this.objectToString(projectDto)}`);
       throw new HttpException('Project not created', HttpStatus.BAD_REQUEST);
     }
-    this.logger.log(`Created project with id '${savedProject.id}'`);
+    this.logger.log(`Created project with id '${savedProject.id}'. ProjectDto '${this.objectToString(projectDto)}`);
     return await this.projectModel.findById(savedProject._id).select({ _id: 0, user_id: 0, __v: 0 }).exec();
   }
 
-  async update(id: string, oldSlug: string, projectData: ProjectData) {
-    const { name, description } = projectData;
-
-    if (!name) {
-      this.logger.error('Failed to update project: Project name cannot be null or undefined');
-      throw new HttpException('Project name cannot be null or undefined', HttpStatus.BAD_REQUEST);
+  async update(id: string, projectDto: ProjectDto) {
+    const { user_id } = projectDto;
+    let slugName = undefined;
+    if ('name' in projectDto) {
+      slugName = this.nameSlugify(projectDto.name)
+    }
+    if ('slug' in projectDto) {
+      slugName = this.nameSlugify(projectDto.slug)
+    }
+    let hasSlugConflict = false;
+    if (slugName !== undefined) {
+      const existingProject = await this.projectModel.findOne({ user_id: user_id, slug: slugName }).select({ _id: 1 }).exec();
+      if (existingProject) {  
+        hasSlugConflict = id !== existingProject.id;
+      }
+      console.log(user_id, slugName, existingProject, hasSlugConflict, id === existingProject.id);
+    }
+    const errors = ProjectValidation(projectDto, hasSlugConflict, 'update');
+    if (errors !== undefined) {
+      this.logger.error(`Failed to update project: validation failed`, `ProjectDto: ${this.objectToString(projectDto)}`, `Errors: ${this.objectToString(errors)}`)
+      throw new HttpExceptionErrors('Project validation failed', HttpStatus.BAD_REQUEST, errors);
     }
 
-    const slugName = this.nameSlugify(name)
-    const existingProject = await this.projectModel.findOne({ slug: slugName }).exec();
-    const hasSlugConflict = oldSlug !== slugName && existingProject;
-    this.ProjectValidation(name, hasSlugConflict, description);
-
-    if (oldSlug !== slugName) projectData.slug = slugName;
+    if (slugName !== undefined) {
+      projectDto.slug = slugName;
+    }
     const updatedProject = await this.projectModel
-      .findByIdAndUpdate(id, projectData, { new: true, select: { _id: 0, user_id: 0, __v: 0 } })
+      .findByIdAndUpdate(id, projectDto, { new: true, select: { _id: 0, user_id: 0, __v: 0 } })
       .exec();
 
     if (!updatedProject) {
-      this.logger.error(`Failed to update project: Mongo not updated the project with '${id}'`);
+      this.logger.error(`Failed to update project: Mongo not updated the project with '${id}'. ProjectDto '${this.objectToString(projectDto)}`);
       throw new HttpException('Project not updated', HttpStatus.BAD_REQUEST);
     }
-    this.logger.log(`Updated project with id '${id}'`);
+    this.logger.log(`Updated project with id '${id}'. ProjectDto '${this.objectToString(projectDto)}`);
     return updatedProject;
   }
 
   async delete(id: string) {
     const project = await this.projectModel.findByIdAndDelete(id).select({ _id: 0, user_id: 0, __v: 0 }).exec()
     if (!project) {
+      console.log(project);
       this.logger.error(`Failed to delete project: Mongo not deleted the project with '${id}'`);
       throw new HttpException('Project not found', 404);
     }
@@ -159,31 +177,6 @@ export class ProjectsService {
     const pagesCount = Math.ceil(countProjects / limit);
     this.logger.log(`Get the number of pages in table project with ${this.objectToString(filter)} - pages_count: ${pagesCount}, limit ${limit}`);
     return pagesCount;
-  }
-
-  private ProjectValidation(name: string, isExistingProject, description: string) {
-    const errors: Record<string, string> = {};
-
-    if (isExistingProject) {
-      errors.name = 'A project with this slug already exists';
-    }
-    if (name.length < 3) {
-      errors.name = 'The name of the project is less than 3 characters';
-    }
-    if (name.length > 50) {
-      errors.name = 'The name of the project is longer than 50 characters';
-    }
-    if (name.length === 0 || name === null || name === undefined) {
-      errors.name = 'The name of the project is required';
-    }
-    if (description.length > 1500) {
-      errors.description = 'The description of the project is longer than 1500 characters';
-    }
-
-    if (Object.keys(errors).length > 0) {
-      this.logger.error(`Project validation failed`, `name: ${name}, description: ${description}`, errors)
-      throw new HttpExceptionErrors('Project validation failed', HttpStatus.BAD_REQUEST, errors);
-    }
   }
 
   private nameSlugify(name: string) {
@@ -200,7 +193,7 @@ export class ProjectsService {
   private objectToString(obj: object): string {
     let text = ''
     Object.keys(obj).forEach((key, index) => {
-      text += `${key} '${obj[key]}'`;
+      text += `${key} '${typeof obj[key] === 'object' ? JSON.stringify(obj[key]) : obj[key]}'`;
       if ((index !== Object.keys(obj).length - 1) && (index < Object.keys(obj).length - 1)) {
         text += ', ';
       }
