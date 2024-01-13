@@ -8,6 +8,9 @@ import { Task, TaskDocument } from 'src/schemas/task.schema';
 import { FindAllOptions } from '../types/find-all-options.type';
 import slugify from 'slugify';
 import { ProjectValidation } from '../validation/project.validation';
+import { FileDto } from 'src/types/file.type';
+import { validationImage } from 'src/validation/image.validation';
+import * as fs from 'fs';
 
 @Injectable()
 export class ProjectsService {
@@ -104,7 +107,7 @@ export class ProjectsService {
 
     const slugName = this.nameSlugify(name);
     const existingProject = await this.projectModel.findOne({ user_id: user_id, slug: slugName }).exec();
-    
+
     const hasSlugConflict = existingProject !== null;
     const errors = ProjectValidation(projectDto, hasSlugConflict);
     if (errors !== undefined) {
@@ -115,10 +118,10 @@ export class ProjectsService {
     projectDto.slug = slugName;
     const savedProject = await this.projectModel.create(projectDto);
     if (!savedProject) {
-      this.logger.error(`Failed to create project: Mongo not create the project. ProjectDto '${this.objectToString(projectDto)}`);
+      this.logger.error(`Failed to create project: Mongo not create the project. ProjectDto: ${this.objectToString(projectDto)}`);
       throw new HttpException('Project not created', HttpStatus.BAD_REQUEST);
     }
-    this.logger.log(`Created project with id '${savedProject.id}'. ProjectDto '${this.objectToString(projectDto)}`);
+    this.logger.log(`Created project with id '${savedProject.id}'. ProjectDto: ${this.objectToString(projectDto)}`);
     return await this.projectModel.findById(savedProject._id).select({ _id: 0, user_id: 0, __v: 0 }).exec();
   }
 
@@ -134,7 +137,7 @@ export class ProjectsService {
     let hasSlugConflict = false;
     if (slugName !== undefined) {
       const existingProject = await this.projectModel.findOne({ user_id: user_id, slug: slugName }).select({ _id: 1 }).exec();
-      if (existingProject) {  
+      if (existingProject) {
         hasSlugConflict = id !== existingProject.id;
       }
       console.log(user_id, slugName, existingProject, hasSlugConflict, id === existingProject.id);
@@ -156,14 +159,13 @@ export class ProjectsService {
       this.logger.error(`Failed to update project: Mongo not updated the project with '${id}'. ProjectDto '${this.objectToString(projectDto)}`);
       throw new HttpException('Project not updated', HttpStatus.BAD_REQUEST);
     }
-    this.logger.log(`Updated project with id '${id}'. ProjectDto '${this.objectToString(projectDto)}`);
+    this.logger.log(`Updated project with id '${id}'. ProjectDto ${this.objectToString(projectDto)}`);
     return updatedProject;
   }
 
   async delete(id: string) {
     const project = await this.projectModel.findByIdAndDelete(id).select({ _id: 0, user_id: 0, __v: 0 }).exec()
     if (!project) {
-      console.log(project);
       this.logger.error(`Failed to delete project: Mongo not deleted the project with '${id}'`);
       throw new HttpException('Project not found', 404);
     }
@@ -177,6 +179,36 @@ export class ProjectsService {
     const pagesCount = Math.ceil(countProjects / limit);
     this.logger.log(`Get the number of pages in table project with ${this.objectToString(filter)} - pages_count: ${pagesCount}, limit ${limit}`);
     return pagesCount;
+  }
+
+  async uploadCover(id: string, file: FileDto) {
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp']; // Add any other allowed image extensions
+    const maxFileSize = 5 * 1024 * 1024; // 5 MB
+
+    const errors = validationImage(file, allowedExtensions, maxFileSize)
+    if (errors) {
+      this.logger.error(`Failed to upload the cover for project with id '${id}'`, 'Errors: ' + this.objectToString(errors));
+      throw new HttpExceptionErrors('File Validation failed', HttpStatus.BAD_REQUEST, errors)
+    }
+
+    const storage = './storage/projects/covers/';
+    const filename = `${id}-${Date.now()}-${Math.floor(Math.random() * 999999)}-${file.originalname}`
+
+    try {
+      await fs.promises.writeFile(storage + filename, file.buffer, {
+        encoding: 'utf-8',
+      });
+    } catch (err) {
+      this.logger.error(`Failed to upload the cover for project with id '${id}': ` + err);
+      throw new HttpException('Failed to upload the cover for project: ' + err + '. ', HttpStatus.BAD_REQUEST)
+    }
+    const updatedProject = await this.projectModel.findByIdAndUpdate(id, { cover: filename }, { new: true, select: { _id: 0, user_id: 0, __v: 0 } }).exec();
+    if (!updatedProject) {
+      this.logger.error(`Failed to upload the cover for project: Mongo not updated the project with id '${id}'`);
+      throw new HttpException(`Failed to upload the cover for project: Mongo not updated the project`, HttpStatus.BAD_REQUEST);
+    }
+    this.logger.log(`Upload cover for project with id '${id}': ${filename}`);
+    return filename;
   }
 
   private nameSlugify(name: string) {

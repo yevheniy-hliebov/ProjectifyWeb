@@ -12,9 +12,9 @@ export class AuthController {
   @Public()
   @Post('register')
   async register(@Body() userDto: UserDto, @Response() res: Res) {
-    const resultLogin = await this.authService.register(userDto);    
-    res.header('Authorization-Cookie', `access-token=Bearer ${resultLogin.access_token}; max-age=3600; secure=true; path=/`);
-    return res.json({ id: resultLogin.user.id, username: resultLogin.user.username, role: resultLogin.user.role })
+    const resultRegister = await this.authService.register(userDto);    
+    res.header('Authorization-Cookie', `access-token=Bearer ${resultRegister.access_token}; max-age=3600; secure=true; path=/`);
+    return res.json({ id: resultRegister.user.id, username: resultRegister.user.username, role: resultRegister.user.role, token: resultRegister.access_token })
   }
   
   @Public()
@@ -23,7 +23,7 @@ export class AuthController {
   async login(@Body() signInDto: Record<string, any>, @Response() res: Res) {
     const resultLogin = await this.authService.login(signInDto.username, signInDto.password);
     res.header('Authorization-Cookie', `access-token=Bearer ${resultLogin.access_token}; max-age=3600; secure=true; path=/`);
-    return res.json({ id: resultLogin.user.id, username: resultLogin.user.username, role: resultLogin.user.role })
+    return res.json({ id: resultLogin.user.id, username: resultLogin.user.username, role: resultLogin.user.role, token: resultLogin.access_token })
   }
 
   @Get()

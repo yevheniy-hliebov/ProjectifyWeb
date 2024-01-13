@@ -11,13 +11,13 @@
  * @property {string | string[] | Record<string, number | boolean | object>} select - Specifies which document fields to include [1] or exclude [0]
  */
 export type FindAllOptions = {
-  skip?: number,
-  limit?: number,
-  sort?: string,
+  skip?: number;
+  limit?: number;
+  sort?: string;
   search?: {
     searchText: string,
     fields?: Array<string>
-  },
-  filter?: object,
-  select?: string | string[] | Record<string, number | boolean | object>
+  };
+  filter?: object;
+  select?: string | string[] | Record<string, number | boolean | object>;
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, Query, HttpCode, Request, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, Query, HttpCode, Request } from '@nestjs/common';
 import { ProjectsService } from '../services/projects.service';
 import { Project } from '../schemas/project.schema';
 import { validateDate } from '../validation/date.validation';
@@ -67,12 +67,6 @@ export class ProjectsController {
       },
       filter: filter
     })
-  }
-
-  @Get('pages-count')
-  async getCountPages(@Request() req) {
-    const user_id = req.user.id;
-    return { pages_count: await this.projectsService.getCountPages({ user_id }, this.limitProjects) };
   }
 
   @Get(':slug')

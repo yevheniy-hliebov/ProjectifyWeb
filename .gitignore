@@ -7,6 +7,8 @@ build
 # package modules
 node_modules
 
+backend/storage
+
 # Logs
 logs
 *.log
