@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, Query, HttpCode, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, Query, HttpCode, Request, HttpStatus } from '@nestjs/common';
 import { ProjectsService } from '../services/projects.service';
 import { Project } from '../schemas/project.schema';
 import { validateDate } from '../validation/date.validation';
@@ -82,7 +82,6 @@ export class ProjectsController {
     return await this.projectsService.create(projectDto);
   }
 
-
   @Put(':slug')
   async update(@Param('slug') slug: string, @Body() projectDto: ProjectDto, @Request() req): Promise<Project> {
     const user_id = req.user.id;
@@ -92,7 +91,7 @@ export class ProjectsController {
   }
 
   @Delete(':slug')
-  @HttpCode(204)
+  @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Param('slug') slug: string, @Request() req) {
     const user_id = req.user.id;
     const id = await this.projectsService.findId({user_id, slug});

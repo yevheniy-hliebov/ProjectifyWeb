@@ -4,7 +4,7 @@ import { FileDto } from "../types/file.type";
 export function validationImage(file: FileDto, allowedExtensions: string | Array<string>, maxFileSize: number) {
   const errors: any = {};
 
-  const fileExtension = extname(file.originalname);
+  const fileExtension = extname(file.originalname).replace('.', '');
 
   if (Array.isArray(allowedExtensions)) {
     if (!allowedExtensions.includes(fileExtension)) {
@@ -21,7 +21,7 @@ export function validationImage(file: FileDto, allowedExtensions: string | Array
   }
 
   if (maxFileSize < file.size) {
-    errors.size = `Expected size is less than ${maxFileSize} MB`
+    errors.size = `Expected size is less than ${maxFileSize} KB`
   }
 
   return Object.keys(errors).length > 0 ? errors : undefined;

@@ -1,25 +1,34 @@
+import * as fs from 'fs';
+import { extname } from 'path';
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import slugify from 'slugify';
 import { Project, ProjectDocument } from '../schemas/project.schema';
 import { ProjectDto } from '../types/project.type';
 import { HttpExceptionErrors } from '../customs.exception';
-import { Task, TaskDocument } from 'src/schemas/task.schema';
+import { Task, TaskDocument } from '../schemas/task.schema';
 import { FindAllOptions } from '../types/find-all-options.type';
-import slugify from 'slugify';
 import { ProjectValidation } from '../validation/project.validation';
-import { FileDto } from 'src/types/file.type';
-import { validationImage } from 'src/validation/image.validation';
-import * as fs from 'fs';
+import { FileDto } from '../types/file.type';
+import { validationImage } from '../validation/image.validation';
+import { ConfigService } from '@nestjs/config';
+import getMimeType from '../functions/get-mimetype.function';
+import createDirectory from 'src/functions/create-directory.function';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectModel(Project.name) private readonly projectModel: Model<ProjectDocument>,
     @InjectModel(Task.name) private readonly taskModel: Model<TaskDocument>,
+    private readonly config: ConfigService,
   ) { }
 
-  private readonly logger = new Logger(ProjectsService.name)
+  private readonly logger = new Logger(ProjectsService.name);
+
+  private readonly storage: string = this.config.get<string>('storage_root') + 'projects/covers/';
+  private readonly allowedExtensions = this.config.get<string[]>('allowed_extensions_cover_images');
+  private readonly maxFileSize = this.config.get<number>('storage_max_file_size');
 
   async findAll(options: FindAllOptions): Promise<{ count: number, projects: ProjectDocument[], page: number, pages_count: number }> {
     let { skip, limit, sort, search, filter, select } = options;
@@ -164,14 +173,47 @@ export class ProjectsService {
   }
 
   async delete(id: string) {
-    const project = await this.projectModel.findByIdAndDelete(id).select({ _id: 0, user_id: 0, __v: 0 }).exec()
-    if (!project) {
-      this.logger.error(`Failed to delete project: Mongo not deleted the project with '${id}'`);
-      throw new HttpException('Project not found', 404);
+    let deletedProject: ProjectDocument;
+    try {
+      deletedProject = Object(await this.projectModel.findByIdAndDelete(id).select({ _id: 0, user_id: 0, __v: 0 }).exec())
+      this.logger.log(`Deleted project with id '${id}'`);
+    } catch (err) {
+      this.logger.error(`Failed to delete project '${id}'`, err);
+      throw new HttpException('Failed to delete project', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    const deleteTasksResult = await this.taskModel.deleteMany({ project_id: id });
-    this.logger.log(`Deleted project with id '${id}'${deleteTasksResult.deletedCount > 0 ? ` and deleted ${deleteTasksResult.deletedCount} tasks` : ''}`);
-    return project;
+
+    if (deletedProject?.cover !== '') {
+      try {
+        await fs.promises.unlink(this.storage + deletedProject.cover)
+        this.logger.log(`Project [id: ${id}] cover deleted in storage successfully: ${deletedProject.cover}`);
+      } catch (err) {
+        this.logger.error(`Error deleting project [id: ${id}] cover in storage: `, err);
+      }
+    }
+    
+    let tasks = await this.taskModel.find({ project_id: id }).select({ _id: 1, cover: 1 }).exec();
+    if (tasks.length > 0) {
+      try {
+        const deleteTasksResult = await this.taskModel.deleteMany({ project_id: id });
+        this.logger.log(`Deleted [${deleteTasksResult.deletedCount}] tasks with project_id '${id}'`);
+        if (deleteTasksResult.deletedCount > 0) {
+          tasks.forEach((task, i) => {
+            if (task.cover !== '') {
+              try {
+                fs.promises.unlink(this.storage + task.cover)
+                this.logger.log(`Task [id: ${task.id}] cover deleted in storage successfully: ${task.cover}`);
+              } catch (err) {
+                this.logger.error(`Error deleting task [id: ${task.id}] cover in storage: `, err);
+              }
+            }
+          });
+        }
+      } catch (err) {
+        this.logger.log(`Deleted tasks with project_id '${id}'`, err);
+      }
+    }
+
+    return deletedProject;
   }
 
   async getCountPages(filter: object, limit: number) {
@@ -181,34 +223,71 @@ export class ProjectsService {
     return pagesCount;
   }
 
-  async uploadCover(id: string, file: FileDto) {
-    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp']; // Add any other allowed image extensions
-    const maxFileSize = 5 * 1024 * 1024; // 5 MB
+  async getCover(id: string) {
+    const coverFilename = (await this.projectModel.findById(id).select({ cover: 1 }))?.cover;
+    if (coverFilename === '') {
+      this.logger.error(`Error get project [id: ${id}] cover: Project not have cover`);
+      throw new HttpException('Project not have cover', HttpStatus.NO_CONTENT);
+    }
+    try {
+      const coverBuffer = fs.readFileSync(this.storage + coverFilename);
+      this.logger.log(`Get project [id: ${id}] cover: ${coverFilename}`);
+      let mimetype = getMimeType(extname(coverFilename).replace('.', ''))
+      return { buffer: coverBuffer, filename: coverFilename, mimetype: mimetype };
+    } catch (error) {
+      this.logger.error(`Error get project [id: ${id}] cover: Project not have cover in storage`);
+      throw new HttpException('Project cover not found', HttpStatus.NOT_FOUND)
+    }
+  }
 
-    const errors = validationImage(file, allowedExtensions, maxFileSize)
+  async uploadCover(id: string, file: FileDto) {
+    const errors = validationImage(file, this.allowedExtensions, this.maxFileSize)
     if (errors) {
-      this.logger.error(`Failed to upload the cover for project with id '${id}'`, 'Errors: ' + this.objectToString(errors));
-      throw new HttpExceptionErrors('File Validation failed', HttpStatus.BAD_REQUEST, errors)
+      this.logger.error(`Error upload project [id: ${id}] cover: Image validation failed`, 'Error: ' + this.objectToString(errors));
+      throw new HttpExceptionErrors('Image validation failed', HttpStatus.BAD_REQUEST, errors)
     }
 
-    const storage = './storage/projects/covers/';
-    const filename = `${id}-${Date.now()}-${Math.floor(Math.random() * 999999)}-${file.originalname}`
+    const filename = `${id}-${Date.now()}-${Math.floor(Math.random() * 999999)}${extname(file.originalname)}`
+    const oldfilename = (await this.projectModel.findById(id).select({ cover: 1 }).exec())?.cover;
 
     try {
-      await fs.promises.writeFile(storage + filename, file.buffer, {
-        encoding: 'utf-8',
-      });
+      await Promise.all([
+        await createDirectory(this.storage),
+        await fs.promises.writeFile(this.storage + filename, file.buffer, {
+          encoding: 'utf-8',
+        }),
+        await this.projectModel.findByIdAndUpdate(id, { cover: filename }).exec()
+      ])
+      this.logger.log(`Project [id: ${id}] cover uploaded successfully: ${filename}`);
+      if (oldfilename !== '') {
+        try {
+          await fs.promises.unlink(this.storage + oldfilename);
+          this.logger.log(`Old project [id: ${id}] cover deleted successfully: ${oldfilename}`);
+        } catch (err) {
+          this.logger.error(`Error deleting project [id: ${id}] cover: `, err);
+        }
+      }
     } catch (err) {
-      this.logger.error(`Failed to upload the cover for project with id '${id}': ` + err);
-      throw new HttpException('Failed to upload the cover for project: ' + err + '. ', HttpStatus.BAD_REQUEST)
+      this.logger.error(`Error uploading project [id: ${id}] cover: `, err);
+      throw new HttpException('Failed to upload cover', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    const updatedProject = await this.projectModel.findByIdAndUpdate(id, { cover: filename }, { new: true, select: { _id: 0, user_id: 0, __v: 0 } }).exec();
-    if (!updatedProject) {
-      this.logger.error(`Failed to upload the cover for project: Mongo not updated the project with id '${id}'`);
-      throw new HttpException(`Failed to upload the cover for project: Mongo not updated the project`, HttpStatus.BAD_REQUEST);
-    }
-    this.logger.log(`Upload cover for project with id '${id}': ${filename}`);
     return filename;
+  }
+
+  async deleteCover(id: string) {
+    const deletefilename = (await this.projectModel.findById(id).select({ cover: 1 }).exec())?.cover;
+    if (deletefilename !== '') {
+      try {
+        await Promise.all([
+          await this.projectModel.findByIdAndUpdate(id, { cover: '' }).exec(),
+          await fs.promises.unlink(this.storage + deletefilename)
+        ])
+        this.logger.log(`Project [id: ${id}] cover deleted successfully: ${deletefilename}`);
+      } catch (err) {
+        this.logger.error(`Error deleting project [id: ${id}] cover: `, err);
+        throw new HttpException('Failed to deleting cover', HttpStatus.INTERNAL_SERVER_ERROR);
+      }
+    }
   }
 
   private nameSlugify(name: string) {

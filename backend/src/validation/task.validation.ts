@@ -22,26 +22,26 @@ export function TaskValidation(taskDto: TaskDto, method = 'create') {
     setError(name, 'name', validateName);
   }
 
-  if ('description' in taskDto) {
+  if ('description' in taskDto && taskDto.description !== '') {
     setError(description, 'description', validateDescription);
   }
-  if ('status' in taskDto) {
+  if ('status' in taskDto && taskDto.status !== '') {
     setError(status, 'status', validateStatus);
   }
-  if ('priority' in taskDto) {
+  if ('priority' in taskDto && taskDto.priority !== '') {
     setError(priority, 'priority', validatePriority);
   }
-  if ('start_date' in taskDto) {
+  if ('start_date' in taskDto && taskDto.start_date !== '') {
     if (!validateDate(start_date)) {
       errors.start_date = 'Invalid start date entered for the task'
     }
   }
-  if ('end_date' in taskDto) {
+  if ('end_date' in taskDto && taskDto.end_date !== '') {
     if (!validateDate(end_date)) {
       errors.end_date = 'Invalid end date entered for the task'
     }
   }
-  if ('end_date' in taskDto) {
+  if ('end_date' in taskDto && taskDto.end_date !== '') {
     if (!isNaN(number)) {
       errors.number = 'Task number must be numeric'
     }

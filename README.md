@@ -82,7 +82,6 @@ $ npm install
 
 3. Save the changes made in the `.env` file.
 
-
 ## Running the server app
 
 ```bash

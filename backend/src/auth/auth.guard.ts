@@ -1,6 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable, SetMetadata, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Observable } from 'rxjs';
 import { Request } from 'express';
 import { jwtConstant } from 'src/constants';
 import { Reflector } from '@nestjs/core';
@@ -21,7 +20,6 @@ export class AuthGuard implements CanActivate {
     if (isPublic) {
       return true;
     }
-
 
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request)

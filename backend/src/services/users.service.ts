@@ -131,7 +131,6 @@ export class UsersService {
     }
   }
 
-
   async delete(id: string) {
     const user = await this.userModel.findByIdAndDelete(id).select({ __v: 0 }).exec();
     if (!user) throw new HttpException('User not found', 404)

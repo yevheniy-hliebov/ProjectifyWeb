@@ -31,6 +31,9 @@ export class Task {
 
     @Prop({ required: true })
     user_id: string;
+
+    @Prop({ default: '' })
+    cover: string
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task)

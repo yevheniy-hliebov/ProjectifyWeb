@@ -10,7 +10,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.useGlobalFilters(new HttpExceptionFilter());
-  
+
   const config = app.get(ConfigService)
   const port = config.get<number>('port');
   const front_url = config.get<string>('front_url');
