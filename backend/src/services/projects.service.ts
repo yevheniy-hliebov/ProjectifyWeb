@@ -14,7 +14,7 @@ import { FileDto } from '../types/file.type';
 import { validationImage } from '../validation/image.validation';
 import { ConfigService } from '@nestjs/config';
 import getMimeType from '../functions/get-mimetype.function';
-import createDirectory from 'src/functions/create-directory.function';
+import createDirectory from '../functions/create-directory.function';
 
 @Injectable()
 export class ProjectsService {
@@ -27,8 +27,8 @@ export class ProjectsService {
   private readonly logger = new Logger(ProjectsService.name);
 
   private readonly storage: string = this.config.get<string>('storage_root') + 'projects/covers/';
-  private readonly allowedExtensions = this.config.get<string[]>('allowed_extensions_cover_images');
-  private readonly maxFileSize = this.config.get<number>('storage_max_file_size');
+  private readonly allowedExtensions = this.config.get<string>('allowed_extensions_cover_images');
+  private readonly maxImageSize = this.config.get<number>('max_image_size');
 
   async findAll(options: FindAllOptions): Promise<{ count: number, projects: ProjectDocument[], page: number, pages_count: number }> {
     let { skip, limit, sort, search, filter, select } = options;
@@ -37,7 +37,7 @@ export class ProjectsService {
     limit = limit !== undefined ? limit : 0;
     filter = filter !== undefined ? filter : {};
     select = select !== undefined ? select : {
-      _id: 0, user_id: 0, __v: 0
+      _id: 0, user_id: 0, __v: 0, cover: 0
     }
 
     let filterQuery: any = filter;
@@ -69,14 +69,21 @@ export class ProjectsService {
         default: break;
       }
     }
-    const projects = await this.projectModel.find(filterQuery).sort(sortQuery).skip(skip).limit(limit).select(select).exec()
-    const countProjects = await this.projectModel.countDocuments(filterQuery);
-    const pagesCount = Math.ceil(countProjects / limit);
-    this.logger.log(`Get projects [count=${projects.length}] ${this.objectToString(filter)} | page: ${skip / limit + 1}, limit: ${limit}`);
-    return { count: projects.length, projects, page: skip / limit + 1, pages_count: pagesCount };
+
+    try {
+      const projects = await this.projectModel.find(filterQuery).sort(sortQuery).skip(skip).limit(limit).select(select).exec()
+      const countProjects = await this.projectModel.countDocuments(filterQuery);
+      const pagesCount = Math.ceil(countProjects / limit);
+      this.logger.log(`Get projects [count=${projects.length}] ${this.objectToString(filter)} | page: ${skip / limit + 1}, limit: ${limit}`);
+      return { count: projects.length, projects, page: skip / limit + 1, pages_count: pagesCount };
+    } catch (err) {
+      this.logger.error(`Failed to find projects`, err);
+      throw new HttpException('Failed to find projects', HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+
   }
 
-  async findOne(filter: object, select = { _id: 0, __v: 0, user_id: 0 }): Promise<ProjectDocument> {
+  async findOne(filter: object, select = { _id: 0, __v: 0, user_id: 0, cover: 0 }): Promise<ProjectDocument> {
     const project = await this.projectModel.findOne(filter).select(select).exec()
     if (!project) {
       this.logger.error(`Failed to read project: Project with ${this.objectToString(filter)} does not exist`);
@@ -96,8 +103,8 @@ export class ProjectsService {
     return project._id.toString();
   }
 
-  async findById(id: string): Promise<ProjectDocument> {
-    const project = await this.projectModel.findById(id).exec()
+  async findById(id: string, select = { _id: 0, __v: 0, user_id: 0, cover: 0 }): Promise<ProjectDocument> {
+    const project = await this.projectModel.findById(id).select(select).exec()
     if (!project) {
       this.logger.error(`Failed to read project: Project with id '${id}' does not exist`);
       throw new HttpException("Project not found", HttpStatus.NOT_FOUND);
@@ -106,7 +113,7 @@ export class ProjectsService {
     return project;
   }
 
-  async create(projectDto: ProjectDto): Promise<ProjectDocument> {
+  async create(projectDto: ProjectDto, select = { _id: 0, __v: 0, user_id: 0, cover: 0 }): Promise<ProjectDocument> {
     const { name, user_id } = projectDto;
 
     if (!name) {
@@ -125,16 +132,18 @@ export class ProjectsService {
     }
 
     projectDto.slug = slugName;
-    const savedProject = await this.projectModel.create(projectDto);
-    if (!savedProject) {
-      this.logger.error(`Failed to create project: Mongo not create the project. ProjectDto: ${this.objectToString(projectDto)}`);
-      throw new HttpException('Project not created', HttpStatus.BAD_REQUEST);
+
+    try {
+      const savedProject = await this.projectModel.create(projectDto);
+      this.logger.log(`Created project with id '${savedProject.id}'. ProjectDto: ${this.objectToString(projectDto)}`);
+      return await this.projectModel.findById(savedProject._id).select(select).exec();
+    } catch (err) {
+      this.logger.error(`Failed to create project. ProjectDto: ${this.objectToString(projectDto)}`, err);
+      throw new HttpException('Project not created', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    this.logger.log(`Created project with id '${savedProject.id}'. ProjectDto: ${this.objectToString(projectDto)}`);
-    return await this.projectModel.findById(savedProject._id).select({ _id: 0, user_id: 0, __v: 0 }).exec();
   }
 
-  async update(id: string, projectDto: ProjectDto) {
+  async update(id: string, projectDto: ProjectDto, select = { _id: 0, __v: 0, user_id: 0, cover: 0 }) {
     const { user_id } = projectDto;
     let slugName = undefined;
     if ('name' in projectDto) {
@@ -160,22 +169,22 @@ export class ProjectsService {
     if (slugName !== undefined) {
       projectDto.slug = slugName;
     }
-    const updatedProject = await this.projectModel
-      .findByIdAndUpdate(id, projectDto, { new: true, select: { _id: 0, user_id: 0, __v: 0 } })
-      .exec();
-
-    if (!updatedProject) {
-      this.logger.error(`Failed to update project: Mongo not updated the project with '${id}'. ProjectDto '${this.objectToString(projectDto)}`);
+    try {
+      const updatedProject = await this.projectModel
+        .findByIdAndUpdate(id, projectDto, { new: true, select: select })
+        .exec();
+      this.logger.log(`Updated project with id '${id}'. ProjectDto ${this.objectToString(projectDto)}`);
+      return updatedProject;
+    } catch (err) {
+      this.logger.error(`Failed to update project. ProjectDto '${this.objectToString(projectDto)}`, err);
       throw new HttpException('Project not updated', HttpStatus.BAD_REQUEST);
     }
-    this.logger.log(`Updated project with id '${id}'. ProjectDto ${this.objectToString(projectDto)}`);
-    return updatedProject;
   }
 
-  async delete(id: string) {
+  async delete(id: string, select = { _id: 0, __v: 0, user_id: 0 }) {
     let deletedProject: ProjectDocument;
     try {
-      deletedProject = Object(await this.projectModel.findByIdAndDelete(id).select({ _id: 0, user_id: 0, __v: 0 }).exec())
+      deletedProject = Object(await this.projectModel.findByIdAndDelete(id).select(select).exec())
       this.logger.log(`Deleted project with id '${id}'`);
     } catch (err) {
       this.logger.error(`Failed to delete project '${id}'`, err);
@@ -190,7 +199,7 @@ export class ProjectsService {
         this.logger.error(`Error deleting project [id: ${id}] cover in storage: `, err);
       }
     }
-    
+
     let tasks = await this.taskModel.find({ project_id: id }).select({ _id: 1, cover: 1 }).exec();
     if (tasks.length > 0) {
       try {
@@ -209,10 +218,9 @@ export class ProjectsService {
           });
         }
       } catch (err) {
-        this.logger.log(`Deleted tasks with project_id '${id}'`, err);
+        this.logger.error(`Error deleting tasks with project_id '${id}'`, err);
       }
     }
-
     return deletedProject;
   }
 
@@ -227,7 +235,7 @@ export class ProjectsService {
     const coverFilename = (await this.projectModel.findById(id).select({ cover: 1 }))?.cover;
     if (coverFilename === '') {
       this.logger.error(`Error get project [id: ${id}] cover: Project not have cover`);
-      throw new HttpException('Project not have cover', HttpStatus.NO_CONTENT);
+      throw new HttpException('Project not have cover', HttpStatus.NOT_FOUND);
     }
     try {
       const coverBuffer = fs.readFileSync(this.storage + coverFilename);
@@ -240,8 +248,8 @@ export class ProjectsService {
     }
   }
 
-  async uploadCover(id: string, file: FileDto) {
-    const errors = validationImage(file, this.allowedExtensions, this.maxFileSize)
+  async uploadCover(id: string, file: FileDto) {    
+    const errors = validationImage(file, { extensions: this.allowedExtensions, maxImageSize: this.maxImageSize })
     if (errors) {
       this.logger.error(`Error upload project [id: ${id}] cover: Image validation failed`, 'Error: ' + this.objectToString(errors));
       throw new HttpExceptionErrors('Image validation failed', HttpStatus.BAD_REQUEST, errors)

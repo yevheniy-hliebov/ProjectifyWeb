@@ -4,16 +4,17 @@ import { AuthService } from './auth.service';
 import { Public } from './auth.guard';
 import { UsersService } from '../services/users.service';
 import { UserDto } from '../types/user.type';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService, private userService: UsersService) { }
+  constructor(private authService: AuthService, private userService: UsersService, private readonly config: ConfigService) { }
 
   @Public()
   @Post('register')
   async register(@Body() userDto: UserDto, @Response() res: Res) {
     const resultRegister = await this.authService.register(userDto);    
-    res.header('Authorization-Cookie', `access-token=Bearer ${resultRegister.access_token}; max-age=3600; secure=true; path=/`);
+    res.header('Authorization-Cookie', `jwt-token=${resultRegister.access_token}; max-age=${this.config.get<string>('jwt_expires_in')}; secure=true; path=/`);
     return res.json({ id: resultRegister.user.id, username: resultRegister.user.username, role: resultRegister.user.role, token: resultRegister.access_token })
   }
   
@@ -22,7 +23,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() signInDto: Record<string, any>, @Response() res: Res) {
     const resultLogin = await this.authService.login(signInDto.username, signInDto.password);
-    res.header('Authorization-Cookie', `access-token=Bearer ${resultLogin.access_token}; max-age=3600; secure=true; path=/`);
+    res.header('Authorization-Cookie', `jwt-token=${resultLogin.access_token}; max-age=${this.config.get<string>('jwt_expires_in')}; secure=true; path=/`);
     return res.json({ id: resultLogin.user.id, username: resultLogin.user.username, role: resultLogin.user.role, token: resultLogin.access_token })
   }
 

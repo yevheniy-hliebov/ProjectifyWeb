@@ -4,7 +4,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 
 @Controller('projects/:slug/cover')
-export class ProjectCoversController {
+export class ProjectCoverController {
   constructor(private readonly projectsService: ProjectsService) { }
 
   @Get()

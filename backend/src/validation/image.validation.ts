@@ -1,27 +1,22 @@
 import { extname } from "path";
 import { FileDto } from "../types/file.type";
 
-export function validationImage(file: FileDto, allowedExtensions: string | Array<string>, maxFileSize: number) {
+export function validationImage(file: FileDto, options: { extensions?: string, maxImageSize?: number }) {
   const errors: any = {};
+  const { extensions, maxImageSize } = options;
+    
+  const arrayAllowedExtensions = extensions.split(',')
 
   const fileExtension = extname(file.originalname).replace('.', '');
 
-  if (Array.isArray(allowedExtensions)) {
-    if (!allowedExtensions.includes(fileExtension)) {
-      let allowedExtensionsString = '';     
-      allowedExtensions.forEach((exception, index) => {
-        allowedExtensionsString += exception + (index < allowedExtensions.length - 1 ? ', ' :  '')
-      });
-      errors.types = `Expected types - ${allowedExtensionsString}`
-    }
-  } else if(typeof allowedExtensions === 'string') {
-    if (allowedExtensions !== fileExtension) {
-      errors.types = `Expected types - ${allowedExtensions}`
+  if (extensions) {
+    if (!arrayAllowedExtensions.includes(fileExtension)) {
+      errors.types = `Expected type${arrayAllowedExtensions.length > 1 ? 's' : ''} - ${extensions}`
     }
   }
 
-  if (maxFileSize < file.size) {
-    errors.size = `Expected size is less than ${maxFileSize} KB`
+  if (maxImageSize && maxImageSize < file.size) {
+    errors.size = `Expected size is less than ${maxImageSize} KB`
   }
 
   return Object.keys(errors).length > 0 ? errors : undefined;
