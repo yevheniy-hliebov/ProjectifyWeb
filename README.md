@@ -56,6 +56,8 @@ $ cd backend
 
 ## Description
 
+To view API documentation on Swagger at [https://api-projectifyweb.up.railway.app/api](api-projectifyweb.up.railway.app/api)
+
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.  
 [Nest Documentation](https://docs.nestjs.com/)
 
@@ -67,17 +69,35 @@ $ npm install
 
 ## Before Running the Server (dotenv)
 
-1. Copy the `.env-example` file and rename it to `.env`.
+1. Copy the `.env-example` file in directory `backend` and rename it to `.env`.
 
 2. Modify the configurations in the `.env` file to suit your environment settings. Ensure the server connects to the database and other necessary configurations.
 
     Example `.env` file:
     ```dotenv
+    # The secret key for JWT authentication (Required Field)
+    JWT_SECRET=DO NOT USE THIS VALUE. INSTEAD, CREATE A COMPLEX SECRET AND KEEP IT SAFE OUTSIDE OF THE SOURCE CODE.
+
+    # Token expiration time in seconds (e.g., 3600 for 1 hour)
+    JWT_EXPIRES_IN=3600
+    
     # The port on which the server is running
     PORT=4000
 
     # your connection string to MongoDB
     MONGO_LINK=`mongodb+srv://<username>:<password>@<cluster-domain>/?dbName=<database-name>&retryWrites=true&w=majority`
+
+    # The URL of the frontend application
+    FRONTEND_URL=http://localhost:3000
+
+    # The root directory for storing files
+    STORAGE_ROOT=./storage/
+
+    # The maximum allowed image size for storage (in megabytes)
+    STORAGE_MAX_IMAGE_SIZE=5
+
+    # The allowed file extensions for cover images (comma-separated)
+    ALLOWED_EXTENSIONS_COVER_IMAGES=jpg,jpeg,png,gif,bmp,svg,webp
     ```
 
 3. Save the changes made in the `.env` file.
@@ -94,6 +114,10 @@ $ npm run start:dev
 # production mode
 $ npm run start:prod
 ```
+Runs the api server mode.\
+Open [http://localhost:4000](http://localhost:4000).
+
+To view the API documentation on Swagger, go to the path [http://localhost:4000/api](http://localhost:4000/api) or the API code json in the OpenAPI 3.0.0 configuration [http://localhost:4000/api-json](http://localhost:4000/api-json)  
 
 <!-- ## Test
 
@@ -119,6 +143,20 @@ $ cd frontend
 ```bash
 $ npm install
 ```
+
+## Before Running the client-side app (dotenv)
+
+1. Copy the `.env-example` file in directory `frontend` and rename it to `.env`.
+
+2. Modify the configurations in the `.env` file to suit your environment settings. Ensure the server connects to the database and other necessary configurations.
+
+    Example `.env` file:
+    ```dotenv
+    # The api server url
+    REACT_APP_API_URL=http://localhost:4000
+    ```
+
+3. Save the changes made in the `.env` file.
 
 ## Running the client-side app
 
