@@ -12,6 +12,7 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @HttpCode(HttpStatus.CREATED)
   async register(@Body() userDto: UserDto, @Response() res: Res) {
     const resultRegister = await this.authService.register(userDto);    
     res.header('Authorization-Cookie', `jwt-token=${resultRegister.access_token}; max-age=${this.config.get<string>('jwt_expires_in')}; secure=true; path=/`);

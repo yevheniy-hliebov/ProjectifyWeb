@@ -1,9 +1,11 @@
+import * as fs from 'fs';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { HttpExceptionFilter } from './http-exception.filter';
 import { Logger } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const logger = new Logger('NestApplication');
@@ -15,6 +17,14 @@ async function bootstrap() {
   const port = config.get<number>('port');
   const front_url = config.get<string>('front_url');
 
+  const existAPISwaggerJson = fs.existsSync('./api-swagger.json')
+  if (existAPISwaggerJson) {
+    const rawData = fs.readFileSync('./api-swagger.json', 'utf-8');
+    const jsonDate = JSON.parse(rawData);
+    console.log(jsonDate);
+    SwaggerModule.setup('api', app, jsonDate);
+  }
+  
   app.enableCors({
     credentials: true,
     origin: front_url,

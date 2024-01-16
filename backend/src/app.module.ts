@@ -22,9 +22,9 @@ import { AuthModule } from './auth/auth.module';
         uri: config.get<string>('mongo_uri'), // Accessing mongolink from configuration
       }),
     }),
+    AuthModule,
     ProjectModule,
     TaskModule,
-    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
