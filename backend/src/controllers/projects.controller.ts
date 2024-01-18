@@ -30,31 +30,13 @@ export class ProjectsController {
     if ((hasDescription === 'true' || hasDescription === '') && (noDescription === 'true' || noDescription === '')) {
       if ('description' in filter) delete filter.description
     }
-    if (created) {
-      let [gteDate, lteDate] = created.split(/\,/);
-      const createdFilter: any = {};
-      if (validateDate(gteDate)) {
-        createdFilter.$gte = new Date(gteDate);
-      }
-      if (validateDate(lteDate)) {
-        createdFilter.$lte = new Date(lteDate);
-      }
-      if (Object.keys(createdFilter).length > 1) {
-        filter.createdAt = createdFilter;
-      }
+    const createdFilter = this.setFilterDate(created);
+    if (createdFilter) {
+      filter.createdAt = createdFilter;
     }
-    if (updated) {
-      let [gteDate, lteDate] = updated.split(/\,/);
-      const updatedFilter: any = {};
-      if (validateDate(gteDate)) {
-        updatedFilter.$gte = new Date(gteDate);
-      }
-      if (validateDate(lteDate)) {
-        updatedFilter.$lte = new Date(lteDate);
-      }
-      if (Object.keys(updatedFilter).length > 1) {
-        filter.updatedAt = updatedFilter;
-      }
+    const updatedFilter = this.setFilterDate(updated);
+    if (updatedFilter) {
+      filter.updatedAt = updatedFilter;
     }
 
     return await this.projectsService.findAll({
@@ -85,7 +67,7 @@ export class ProjectsController {
   @Put(':slug')
   async update(@Param('slug') slug: string, @Body() projectDto: ProjectDto, @Request() req): Promise<Project> {
     const user_id = req.user.id;
-    const id = await this.projectsService.findId({user_id, slug});
+    const id = await this.projectsService.findId({ user_id, slug });
     projectDto.user_id = user_id;
     return await this.projectsService.update(id, projectDto);
   }
@@ -94,7 +76,21 @@ export class ProjectsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Param('slug') slug: string, @Request() req) {
     const user_id = req.user.id;
-    const id = await this.projectsService.findId({user_id, slug});
+    const id = await this.projectsService.findId({ user_id, slug });
     return await this.projectsService.delete(id);
+  }
+
+  private setFilterDate(date) {
+    const dateFilter: any = {};
+    if (date) {
+      let [gteDate, lteDate] = date.split(/\,/);
+      if (validateDate(gteDate)) {
+        dateFilter.$gte = new Date(gteDate);
+      }
+      if (validateDate(lteDate)) {
+        dateFilter.$lte = new Date(lteDate);
+      }
+    }
+    return Object.keys(dateFilter).length > 0 ? dateFilter : undefined;
   }
 }

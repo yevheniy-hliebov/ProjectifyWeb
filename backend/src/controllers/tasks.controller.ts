@@ -129,7 +129,7 @@ export class TasksController {
         dateFilter.$lte = new Date(lteDate);
       }
     }
-    return Object.keys(dateFilter).length > 1 ? dateFilter : undefined;
+    return Object.keys(dateFilter).length > 0 ? dateFilter : undefined;
   }
 
   private setFilterDeadline(deadline, filter: any = {}) {
