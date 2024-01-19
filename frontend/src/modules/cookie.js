@@ -1,4 +1,4 @@
-export function getCookie(nameCookie) {
+function get(nameCookie) {
   let name = nameCookie + '=';
   let decodedCookie = decodeURIComponent(document.cookie);
   let ca = decodedCookie.split(';');
@@ -13,3 +13,13 @@ export function getCookie(nameCookie) {
   }
   return null;
 }
+
+function remove(nameCookie) {
+  if (get(nameCookie)) {
+    document.cookie = `${nameCookie}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+  }
+}
+
+const Cookie = { get, delete: remove };
+
+export default Cookie;

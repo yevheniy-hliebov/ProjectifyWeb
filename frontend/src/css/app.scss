@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.btn {
+    &_blue {
+        @apply bg-blue-500;
+
+        &:hover {
+            @apply bg-blue-400;
+        }
+
+        &:active {
+            @apply bg-blue-600;
+        }
+    }
+
+    &_red {
+        @apply bg-red-500;
+
+        &:hover {
+            @apply bg-red-400;
+        }
+
+        &:active {
+            @apply bg-red-600;
+        }
+    }
+
+    &_green {
+        @apply bg-green-600;
+
+        &:hover {
+            @apply bg-green-500;
+        }
+
+        &:active {
+            @apply bg-green-700;
+        }
+    }
+
+    &_gray {
+        @apply bg-gray-500;
+
+        &:hover {
+            @apply bg-gray-400;
+        }
+
+        &:active {
+            @apply bg-gray-600;
+        }
+    }
+}
+
+.filter {
+    transition: all 0.3s ease;
+    &_open {
+        @apply bg-opacity-60;
+        @apply opacity-100;
+        @apply pointer-events-auto;
+
+        
+        .filter-window {
+            @apply translate-x-0;
+        }
+    }
+    .filter-window {
+        transition: all 0.3s ease;
+    }
+}
+
+.non-scroll {
+    @apply overflow-hidden;
+}
+
+.checkbox-wrapper {
+    input[type="checkbox"] {
+        /* removing default appearance */
+        -webkit-appearance: none; 
+        /* creating a custom design */
+        @apply appearance-none size-[25.6px] rounded-[3px] cursor-pointer border border-gray-500;
+
+        &.checked {
+            @apply bg-blue-500 relative;
+
+            &::before {
+                content: "\2713";
+                @apply size-[2px] absolute text-[14px] text-gray-50;
+                top: 0%;
+                left: 30%;
+            }
+        }
+
+        &:disabled {
+            @apply border-gray-400 bg-gray-400;
+        }
+        &:focus {
+            @apply outline-blue-400;    
+        }
+    }
+}

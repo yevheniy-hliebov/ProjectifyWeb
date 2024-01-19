@@ -112,7 +112,7 @@ export class TasksService {
       const validStatuses = ['Not started', 'In progress', 'Done'];
       validStatuses.forEach((validStatus, i) => {
         if (validStatus.toLowerCase() === taskDto.status.toLowerCase()) {
-          taskDto.status = validStatus[i];
+          taskDto.status = validStatuses[i];
         }
       });
     }
@@ -120,7 +120,7 @@ export class TasksService {
       const validPriorities = ['Low', 'Medium', 'High'];
       validPriorities.forEach((validPriority, i) => {
         if (validPriority.toLowerCase() === taskDto.priority.toLowerCase()) {
-          taskDto.priority = validPriority[i];
+          taskDto.priority = validPriorities[i];
         }
       });
     }
@@ -197,8 +197,10 @@ export class TasksService {
         let i = 1;
         tasks.forEach(async (task) => {
           try {
-            await this.taskModel.updateOne({ _id: task._id, project_id: deletedTask.project_id }, { number: i })
-            this.logger.log(`Renumber task '${task.id}' to number ${i}`);
+            if (task.number !== i) {
+              await this.taskModel.updateOne({ _id: task._id, project_id: deletedTask.project_id }, { number: i })
+              this.logger.log(`Renumber task '${task.id}' to number ${i}`);
+            }
           } catch (err) {
             console.log(err);
             this.logger.error(`Failed to renumber task '${task.id}'`, err);

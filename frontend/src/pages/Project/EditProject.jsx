@@ -1,33 +1,45 @@
-import React, { useEffect, useState } from 'react'
-import Header from '../../components/Header'
-import FormProject from '../../components/FormProject'
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getProject } from '../../functions/projectAPI';
-import { handleResponse } from '../../functions/handleResponse';
+import Header from '../../components/section-components/Header';
+import Button from '../../components/form-components/Button';
+import FormProject from '../../components/form-components/FormProject';
+import { getProject } from '../../api/projects';
+import Loading from '../../components/Loading';
 
 function EditProject() {
   const navigate = useNavigate();
+  const [projectData, setProjectData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const { slug } = useParams();
-  const [project, setProject] = useState(null)
 
   useEffect(() => {
-    getProject(slug).then(response => {
-      handleResponse(response, navigate, () => {
-        setProject(response.data)
-      })
-    })
-  }, [slug])
-
-  if (!project) return;
+    getProject(slug).then((res) => {
+      if (res?.status === 200) {
+        const { name, description } = res?.data;
+        setProjectData({ name, description });
+        setLoading(false);
+      } else if (res?.status === 401) {
+        navigate('/login');
+      } else if (res?.status === 404) {
+        navigate('/404');
+      } else if (res?.status === 500 || !res) {
+        navigate('/500');
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
   return (
-    <div className='wrapper w-full min-h-screen bg-gray-50'>
-      <Header h1_text={'Edit project'} />
+    <div className="wrapper w-full min-h-screen bg-gray-50">
+      <Header title="Edit project" buttons={<Button link="/">Home</Button>} />
       <div className="section">
-        <FormProject projectData={project} isUpdateAction={true} />
+        <Loading loading={loading} />
+        {!loading ? (
+          <FormProject projectData={projectData} isEditProject={true} oldSlug={slug} />
+        ) : null}
       </div>
     </div>
-  )
+  );
 }
 
-export default EditProject
+export default EditProject;

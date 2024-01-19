@@ -1,52 +1,82 @@
-import React, { useContext, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import Button from '../../components/Button';
-import { deleteProject, getProject } from '../../functions/projectAPI';
-import { formatDate } from '../../functions/formatDate';
-import Header from '../../components/Header';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import {
+  changeProjectCover,
+  deleteProject,
+  deleteProjectCover,
+  getProject,
+  getProjectCover,
+  uploadProjectCover
+} from '../../api/projects';
+import Header from '../../components/section-components/Header';
+import Button from '../../components/form-components/Button';
 import Container from '../../components/Container';
-import { NotificationContext } from '../../components/Notifications';
-import { deleteTask, getTasks } from '../../functions/taskApi';
-import { handleResponse } from '../../functions/handleResponse';
+import { formatDate } from '../../modules/format-date';
+import Loading from '../../components/Loading';
+import Input, { Checkbox } from '../../components/form-components/Input';
+import FilterWindow, { CloseFilter, OpenFilter } from '../../components/FilterWindow';
+import { deleteTask, getTasks } from '../../api/tasks';
+import scrollTop from '../../modules/scroll-top';
+import TableTasks from '../../components/TableTasks';
 import Pagination from '../../components/Pagination';
+import Select from '../../components/form-components/Select';
+import useNotification from '../../hook/useNotification';
 
-const emptyFunction = () => { };
-const sortValuesList = ['newest', 'oldest', 'alphabetical', 'reverseAlphabetical']
+const sortValuesList = ['newest', 'oldest', 'alphabetical', 'reverseAlphabetical'];
+const queryList = [
+  'page',
+  'sort',
+  'search',
+  'has_description',
+  'no_description',
+  'status',
+  'priority',
+  'deadline',
+  'created',
+  'updated'
+];
+const valueTrue = ['', 'true'];
 
 function Project() {
   const navigate = useNavigate();
-  const [notificationsParams, setNotificationsParams] = useContext(NotificationContext)
-  const [queryParams, setQueryParams] = useSearchParams();
-  const page = queryParams.get('page')
-  const sortParam = queryParams.get('sort')
-  const searchParam = queryParams.get('search')
   const { slug } = useParams();
-  const [project, setProject] = useState(null)
+  const { addNotification } = useNotification();
+  const [searchParams, setSearchParams] = useSearchParams();
+  let queryParams = {};
+  queryList.forEach((queryKey) => {
+    queryParams[queryKey] = searchParams.get(queryKey);
+  });
+
+  const [project, setProject] = useState(null);
+  const [projectCoverUrl, setProjectCoverUrl] = useState(null);
+  const [loadingProject, setLoadingProjects] = useState(true);
+
+  const [currentPage, setCurrentPage] = useState(
+    queryParams.page && !isNaN(queryParams.page) && Number(queryParams.page) > 0
+      ? Number(queryParams.page)
+      : 1
+  );
+  const [pagesCount, setPagesCount] = useState(1);
   const [tasks, setTasks] = useState([]);
-  const [currentPage, setCurrentPage] = useState((page && !isNaN(page) && Number(page) > 0) ? Number(page) : 1)
-  const [pagesCount, setPagesCount] = useState(0);
-  const [sort, setSort] = useState(sortValuesList.includes(sortParam) ? sortParam : sortValuesList[0])
-  const [search, setSearch] = useState(searchParam ? searchParam : '')
+  const [loadingTasks, setLoadingTasks] = useState(false);
+  const [sort, setSort] = useState(
+    sortValuesList.includes(queryParams.sort) ? queryParams.sort : sortValuesList[0]
+  );
+  const [search, setSearch] = useState(queryParams.search ? queryParams.search : '');
 
-  useEffect(() => {
-    getProject(slug).then(response => {
-      handleResponse(response, navigate, () => {
-        setProject(response.data);
-      }, emptyFunction, () => { navigate('/project-not-found') })
-    })
-  }, [slug])
+  const [filter, setFilter] = useState({
+    has_description: valueTrue.includes(queryParams.has_description).toString(),
+    no_description: valueTrue.includes(queryParams.no_description).toString(),
+    status: queryParams.status ? queryParams.status : '',
+    priority: queryParams.priority ? queryParams.priority : '',
+    deadline: queryParams.deadline ? queryParams.deadline : '',
+    created: queryParams.created ? queryParams.created : '',
+    updated: queryParams.updated ? queryParams.updated : ''
+  });
 
-  async function getAndSetTasks() {
-    getTasks(slug, currentPage, search, sort).then(response => {
-      handleResponse(response, navigate, () => {
-        setTasks(response.data.tasks)
-        setPagesCount(response.data.pages_count)
-      }, () => { setTasks([]) }, () => { setTasks([]) })
-    })
-  }
-
-  useEffect(() => {
-    const query = {}
+  const getQueryObject = () => {
+    const query = {};
     if (currentPage !== 1) {
       query.page = currentPage;
     }
@@ -56,167 +86,411 @@ function Project() {
     if (search !== '') {
       query.search = search;
     }
-    setQueryParams(query)
-    getAndSetTasks();
-    scrollToTop();
-  }, [currentPage, sort, search])
+    if (search !== '') {
+      query.search = search;
+    }
+    if (filter.has_description !== filter.no_description) {
+      if (filter.has_description === 'true') {
+        query.has_description = filter.has_description;
+      }
+      if (filter.no_description === 'true') {
+        query.no_description = filter.no_description;
+      }
+    }
+    if (filter.status !== '') {
+      query.status = filter.status;
+    }
+    if (filter.priority !== '') {
+      query.priority = filter.priority;
+    }
+    if (filter.deadline !== '') {
+      query.deadline = filter.deadline;
+    }
+    if (filter.created !== '') {
+      query.created = filter.created;
+    }
+    if (filter.updated !== '') {
+      query.updated = filter.updated;
+    }
+    return query;
+  };
 
-  const handleDelete = async (e) => {
-    e.preventDefault();
-    deleteProject(project.slug).then(response => {
-      handleResponse(response, navigate, emptyFunction, emptyFunction, () => {
-        setNotificationsParams([...notificationsParams, {
-          title: `Error!`,
-          message: `Failed to delete project "${project.name}".`,
-          status: "error",
-        }])
-      }, () => {
-        setNotificationsParams([...notificationsParams, {
-          title: `Succefully deleted!`,
-          message: `Project "${project.name}" was deleted successfully.`,
-          status: "success",
-        }])
-        navigate('/')
-      })
-    })
-  }
+  useEffect(() => {
+    getProject(slug).then((res) => {
+      if (res?.status === 200) {
+        setProject(res.data);
+        setLoadingProjects(false);
+      } else if (res?.status === 401) {
+        navigate('/login');
+      } else if (res?.status === 404) {
+        navigate('/404');
+      } else if (res?.status === 500 || !res) {
+        navigate('/500');
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
-  const handleDeleteTask = async (e, taskData) => {
-    e.preventDefault();
-    deleteTask(project.slug, taskData.number).then(response => {
-      handleResponse(response, useNavigate, emptyFunction, emptyFunction, () => {
-        setNotificationsParams([...notificationsParams, {
-          title: `Error!`,
-          message: `Failed to delete task "${taskData.name}".`,
-          status: "error",
-        }])
-      }, () => {
-        setNotificationsParams([...notificationsParams, {
-          title: `Succefully deleted!`,
-          message: `Task "${taskData.name}" was deleted successfully.`,
-          status: "success",
-        }])
-        getAndSetTasks()
-      })
-    })
-  }
+  useEffect(() => {
+    if (!loadingProject) {
+      getProjectCover(slug).then((res) => {
+        if (res?.status === 200) {
+          const url = URL.createObjectURL(res.data);
+          setProjectCoverUrl(url);
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingProject]);
+
+  useEffect(() => {
+    if (!loadingProject) {
+      setLoadingTasks(true);
+      const query = getQueryObject();
+      setSearchParams(query);
+      if (!('sort' in query)) query.sort = sortValuesList[0];
+      getTasks(slug, query).then((res) => {
+        if (res?.status === 200) {
+          setTasks(res.data.tasks);
+          setPagesCount(res.data.pages_count);
+        }
+        setLoadingTasks(false);
+      });
+      scrollTop();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingProject, currentPage, sort, search, filter]);
+
+  const handleDeleteProject = () => {
+    deleteProject(slug).then((res) => {
+      if (res?.status === 204) {
+        addNotification(`Project "${project.name}" was successfully deleted.`, 204);
+        navigate('/');
+      } else if (res?.status) {
+        addNotification(res.data.message, res.data.statusCode);
+      }
+    });
+  };
+
+  const handleApplyFilter = () => {
+    const formFilter = document.querySelector('[name="form-filter"]');
+    setCurrentPage(1);
+    console.log(formFilter);
+    setFilter({
+      has_description: formFilter.has_description.checked.toString(),
+      no_description: formFilter.no_description.checked.toString(),
+      status: formFilter.status.value,
+      priority: formFilter.priority.value,
+      deadline: formFilter.end_date.value
+        ? formFilter.start_date.value + ',' + formFilter.end_date.value
+        : formFilter.start_date.value,
+      created: formFilter.created_to.value
+        ? formFilter.created_from.value + ',' + formFilter.created_to.value
+        : formFilter.created_from.value,
+      updated: formFilter.updated_to.value
+        ? formFilter.updated_from.value + ',' + formFilter.updated_to.value
+        : formFilter.updated_from.value
+    });
+    CloseFilter();
+  };
 
   const handleSearch = (e) => {
-    setSearch(e.target.value)
-  }
-
+    setSearch(e.target.value);
+  };
   const handleSort = (e) => {
-    setSort(e.target.value)
-  }
+    setSort(e.target.value);
+  };
 
-  if (!project) return;
+  const handleDeleteTask = (task, index) => {
+    deleteTask(slug, task.number).then((res) => {
+      if (res?.status === 204) {
+        setTasks((prevTasksArray) =>
+          prevTasksArray.filter((task, i) => {
+            return i !== index;
+          })
+        );
+        addNotification(`Task "${task.name}" was successfully deleted.`, 204);
+      } else if (res?.status) {
+        addNotification(res.data.message, res.data.statusCode);
+      }
+    });
+  };
+
+  const handleUploadCover = (e) => {
+    const formData = new FormData();
+    const file = e.target.files[0];
+    formData.append('cover-image', file);
+    uploadProjectCover(slug, formData).then((res) => {
+      if (res?.status === 201) {
+        const fileReader = new FileReader();
+        fileReader.onload = (event) => {
+          setProjectCoverUrl(event.target.result);
+        };
+        fileReader.readAsDataURL(file);
+        addNotification(`Cover for project "${project.name}" was successfully uploaded.`, 201);
+      } else if (res?.status) {
+        addNotification(res.data.message, res.data.statusCode);
+      }
+    });
+  };
+
+  const handleChangeCover = (e) => {
+    const formData = new FormData();
+    const file = e.target.files[0];
+    formData.append('cover-image', file);
+    changeProjectCover(slug, formData).then((res) => {
+      if (res?.status === 200) {
+        const fileReader = new FileReader();
+        fileReader.onload = (event) => {
+          setProjectCoverUrl(event.target.result);
+        };
+        fileReader.readAsDataURL(file);
+        addNotification(`Cover for project "${project.name}" was successfully changed.`, 201);
+      } else if (res?.status) {
+        addNotification(res.data.message, res.data.statusCode);
+      }
+    });
+  };
+
+  const handleDeleteCover = (e) => {
+    deleteProjectCover(slug).then((res) => {
+      if (res?.status === 204) {
+        setProjectCoverUrl(null);
+        addNotification(`Cover for project "${project.name}" was successfully deleted.`, 204);
+      } else if (res?.status) {
+        addNotification(res.data.message, res.data.statusCode);
+      }
+    });
+  };
 
   return (
-    <div className='wrapper w-full min-h-screen bg-gray-50'>
-      <Header h1_text={'Read project'} btn_link={{ link: '/', color: 'gray', children: 'Back to Home' }} />
+    <div className="wrapper w-full min-h-screen bg-gray-50">
+      {projectCoverUrl ? (
+        <div className="w-full h-44 group relative max-lg:h-32 max-md:h-24 max-sm:h-16 object-cover">
+          <img
+            className="w-full h-full object-cover pointer-events-none"
+            src={projectCoverUrl}
+            alt="cover"
+          />
+
+          <div className="absolute w-full bottom-0 right-0 group-hover:opacity-100 opacity-0 transition-all">
+            <Container className="flex gap-1 justify-end">
+              <div className="scale-75 flex gap-2">
+                <Button
+                  color="blue"
+                  type="file"
+                  name="cover-image"
+                  accept={'image/png, image/jpeg, image/gif, image/bmp, image/svg+xml, image/webp'}
+                  onChange={handleChangeCover}
+                >
+                  Change
+                </Button>
+                <Button color="red" onClick={handleDeleteCover}>
+                  Delete
+                </Button>
+              </div>
+            </Container>
+          </div>
+        </div>
+      ) : null}
+      <Header
+        title="Read project"
+        buttons={
+          <>
+            {!projectCoverUrl && !loadingProject ? (
+              <Button
+                color="blue"
+                type="file"
+                name="cover-image"
+                accept={'image/png, image/jpeg, image/gif, image/bmp, image/svg+xml, image/webp'}
+                onChange={handleUploadCover}
+              >
+                Upload cover
+              </Button>
+            ) : null}
+            <Button link="/">Home</Button>
+          </>
+        }
+      />
       <div className="main">
-        <Container>
-          {project ? (
-            <div className="w-full p-[15px] max-sm:px-0 flex-col justify-start gap-5 inline-flex">
-              <h2 className="self-stretch text-gray-900 text-[32px] font-bold leading-9">{project.name}</h2>
-              <div className="self-stretch flex-col justify-start items-start gap-2.5 flex">
-                <div className="text-gray-900 text-base font-bold leading-tight">Description:</div>
-                <div className="self-stretch text-justify text-gray-900 text-base font-normal leading-tight">{project.description}</div>
-              </div>
-              <div className="self-stretch justify-start items-center gap-2.5 inline-flex">
-                <div className="text-gray-900 text-base font-bold leading-tight">Created:</div>
-                <div className="grow shrink basis-0 text-gray-900 text-base font-normal leading-tight">{formatDate(project.createdAt, 'dd.MM.yyyy (HH:mm) ')}</div>
-              </div>
-              {project.createdAt === project.updatedAt ? null : (
+        <div className="sectio-project">
+          <Container>
+            <Loading loading={loadingProject} />
+            {!loadingProject ? (
+              <div className="w-full p-[15px] max-sm:px-0 flex-col justify-start gap-5 inline-flex">
+                <h2 className="self-stretch text-gray-900 text-[32px] max-sm:text-[20px] font-bold leading-9">
+                  {project.name}
+                </h2>
+                {project.description ? (
+                  <div className="self-stretch flex-col justify-start items-start gap-2.5 flex">
+                    <div className="text-gray-900 text-base font-bold leading-tight">
+                      Description:
+                    </div>
+                    <div className="self-stretch text-justify text-gray-900 text-base font-normal leading-tight">
+                      {project.description}
+                    </div>
+                  </div>
+                ) : null}
                 <div className="self-stretch justify-start items-center gap-2.5 inline-flex">
-                  <div className="text-gray-900 text-base font-bold leading-tight">Updated:</div>
-                  <div className="grow shrink basis-0 text-gray-900 text-base font-normal leading-tight">{formatDate(project.updatedAt, 'dd.MM.yyyy (HH:mm) ')}</div>
+                  <div className="text-gray-900 text-base font-bold leading-tight">Created:</div>
+                  <div className="grow shrink basis-0 text-gray-900 text-base font-normal leading-tight">
+                    {formatDate(project.createdAt, 'yyyy-MM-dd (HH:mm) ')}
+                  </div>
                 </div>
-              )}
-              <div className="w-full flex justify-between">
-                <Button link={`/projects/${project.slug}/add-task`} color='blue'>Add task</Button>
+                {project.createdAt === project.updatedAt ? null : (
+                  <div className="self-stretch justify-start items-center gap-2.5 inline-flex">
+                    <div className="text-gray-900 text-base font-bold leading-tight">Updated:</div>
+                    <div className="grow shrink basis-0 text-gray-900 text-base font-normal leading-tight">
+                      {formatDate(project.updatedAt, 'yyyy-MM-dd (HH:mm) ')}
+                    </div>
+                  </div>
+                )}
+                <div className="w-full flex justify-between">
+                  <Button link={`/projects/${project.slug}/add-task`} color="blue">
+                    Add task
+                  </Button>
 
-                <div className="flex items-center gap-[10px]">
-                  <Button link={`/projects/${project.slug}/edit`} color='gray'>Edit</Button>
-                  <Button color='red' onClick={handleDelete}>Delete</Button>
+                  <div className="flex items-center gap-[10px]">
+                    <Button link={`/projects/${project.slug}/edit`} color="gray">
+                      Edit
+                    </Button>
+                    <Button color="red" onClick={handleDeleteProject}>
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               </div>
+            ) : null}
+          </Container>
+        </div>
 
-              {(tasks.length !== 0 || search.length !== 0) ? (
-                <>
-                  <h2 className="self-stretch text-gray-900 text-[32px] font-bold leading-9">Tasks</h2>
-                  <div className="flex justify-between items-center max-[400px]:flex-wrap gap-[20px]">
-                    <input type="text" placeholder='Search'
-                      onChange={handleSearch} value={search}
-                      className="max-w-[400px] w-full p-[10px] border border-gray-500 focus:outline-blue-400 rounded-[3px] 
-              text-base font-normal text-gray-900 placeholder:text-gray-500 leading-tight" />
+        <div className="section-tasks">
+          <div className="row-setting">
+            <Container>
+              <div className="flex px-[15px] items-end flex-col gap-[15px]">
+                <div className="w-full flex justify-between items-center flex-nowrap max-[430px]:flex-col gap-[15px]">
+                  <input
+                    type="text"
+                    placeholder="Search"
+                    name="search"
+                    onChange={handleSearch}
+                    value={search}
+                    className="max-w-[400px] w-full p-[10px] border border-gray-500 focus:outline-blue-400 rounded-[3px] text-base font-normal text-gray-900 placeholder:text-gray-500 leading-tight"
+                  />
+                  <select
+                    name="sort"
+                    onChange={handleSort}
+                    value={sort}
+                    className="max-w-[200px] cursor-pointer max-[430px]:max-w-[400px] w-full p-[10px] border border-gray-500 focus:outline-blue-400 rounded-[3px] text-base font-normal text-gray-900"
+                  >
+                    <option value="newest">Newest to oldest</option>
+                    <option value="oldest">Oldest to newest</option>
+                    <option value="alphabetical">Alphabetical</option>
+                    <option value="reverseAlphabetical">Reverse alphabetical</option>
+                  </select>
+                </div>
+                <Button onClick={OpenFilter} className="btn-filter">
+                  Filter
+                </Button>
 
-                    <select
-                      onChange={handleSort} value={sort}
-                      className="min-[400px]:max-w-[200px] w-full p-[10px] border border-gray-500 focus:outline-blue-400 rounded-[3px] 
-              text-base font-normal text-gray-900">
-                      <option value="newest">Newest to oldest</option>
-                      <option value="oldest">Oldest to newest</option>
-                      <option value="alphabetical">Alphabetical</option>
-                      <option value="reverseAlphabetical">Reverse alphabetical</option>
-                    </select>
+                <FilterWindow handleApplyFilter={handleApplyFilter}>
+                  <Checkbox
+                    label="Has description"
+                    name="has_description"
+                    checked={filter.has_description === 'true'}
+                  />
+                  <Checkbox
+                    label="No description"
+                    name="no_description"
+                    checked={filter.no_description === 'true'}
+                  />
+
+                  <Select
+                    label="Status"
+                    inputValue={filter.status}
+                    placeholder="--Choose an option--"
+                    listOptions={['Not started', 'In progress', 'Done']}
+                    name="status"
+                  />
+                  <Select
+                    label="Priority"
+                    inputValue={filter.priority}
+                    placeholder="--Choose an option--"
+                    listOptions={['Low', 'Medium', 'High']}
+                    name="priority"
+                  />
+
+                  <div className="flex gap-4 mt-4">
+                    <Input
+                      label="Start Date"
+                      type="date"
+                      name="start_date"
+                      inputValue={filter.deadline.split(',')[0]}
+                    />
+                    <Input
+                      label="End Date"
+                      type="date"
+                      name="end_date"
+                      inputValue={filter.deadline.split(',')[1]}
+                    />
                   </div>
-
-                  <div className="w-full">
-                    <table className="w-full table-auto">
-                      <thead>
-                        <tr>
-                          <th className='border border-gray-500'>Name</th>
-                          <th className='border border-gray-500'>Description</th>
-                          <th className='border border-gray-500'>Status</th>
-                          <th className='border border-gray-500'>Priority</th>
-                          <th className='border border-gray-500'>Start date</th>
-                          <th className='border border-gray-500'>End date</th>
-                          <th className='border border-gray-500'>Created</th>
-                          <th className='border border-gray-500'>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {tasks.map((task, index) => {
-                          return (
-                            <tr key={index}>
-                              <td className='border border-gray-500'><Link to={`/projects/${project.slug}/tasks/${task.number}`} className='hover:text-blue-600 active:hover:text-blue-700'>{task.name}</Link></td>
-                              <td className='border border-gray-500'>{task.description}</td>
-                              <td className='border border-gray-500 text-center'>{task.status}</td>
-                              <td className='border border-gray-500 text-center'>{task.priority}</td>
-                              <td className='border border-gray-500 text-center'>{task.start_date}</td>
-                              <td className='border border-gray-500 text-center'>{task.end_date}</td>
-                              <td className='border border-gray-500 text-center'>{formatDate(task.createdAt, 'yyyy-MM-dd (HH:mm)')}</td>
-                              <td className='border border-gray-500 text-center'>
-                                <div className="flex justify-center items-center gap-[10px]">
-                                  <Button link={`/projects/${project.slug}/tasks/${task.number}/edit`} color='gray'>Edit</Button>
-                                  <Button color='red' onClick={(e) => { handleDeleteTask(e, task) }}>Delete</Button>
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
+                  <div className="w-full mt-4 text-gray-900 text-base font-bold leading-tight">
+                    Created Date
                   </div>
-                </>
-              ) : null}
-              <Pagination currentPage={currentPage} pagesCount={pagesCount} setCurrentPage={setCurrentPage} />
-            </div>
+                  <div className="flex gap-4">
+                    <Input
+                      label="From"
+                      type="date"
+                      name="created_from"
+                      inputValue={filter.created.split(',')[0]}
+                    />
+                    <Input
+                      label="To"
+                      type="date"
+                      name="created_to"
+                      inputValue={filter.created.split(',')[1]}
+                    />
+                  </div>
+                  <div className="w-full mt-4 text-gray-900 text-base font-bold leading-tight">
+                    Updated Date
+                  </div>
+                  <div className="flex gap-4">
+                    <Input
+                      label="From"
+                      type="date"
+                      name="updated_from"
+                      inputValue={filter.updated.split(',')[0]}
+                    />
+                    <Input
+                      label="To"
+                      type="date"
+                      name="updated_to"
+                      inputValue={filter.updated.split(',')[1]}
+                    />
+                  </div>
+                </FilterWindow>
+              </div>
+            </Container>
+          </div>
+          <Loading loading={loadingTasks} />
+          {!loadingTasks && tasks.length > 0 ? (
+            <Container>
+              <TableTasks projectSlug={slug} tasks={tasks} handleDeleteTask={handleDeleteTask} />
+              <Pagination
+                currentPage={currentPage}
+                pagesCount={pagesCount}
+                setCurrentPage={setCurrentPage}
+              />
+            </Container>
           ) : (
-            <p>LOADING...</p>
+            <div className="w-full px-[15px] flex justify-center mx-auto my-3 text-2xl text-gray-500">
+              The list of tasks is empty
+            </div>
           )}
-        </Container>
+        </div>
       </div>
     </div>
-  )
+  );
 }
 
-function scrollToTop() {
-  window.scrollTo({
-    top: 0,
-    behavior: 'smooth'
-  });
-}
-
-export default Project
+export default Project;

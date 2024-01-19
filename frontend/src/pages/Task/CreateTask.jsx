@@ -1,36 +1,19 @@
-import React, { useEffect, useState } from 'react'
-import FormTask from '../../components/FormTask'
-import Header from '../../components/Header'
-import { useNavigate, useParams } from 'react-router-dom';
-import { getProject } from '../../functions/projectAPI';
-import { handleResponse } from '../../functions/handleResponse';
-
-const emptyFunction = () => {};
+import React from 'react';
+import { useParams } from 'react-router-dom';
+import Header from '../../components/section-components/Header';
+import Button from '../../components/form-components/Button';
+import FormTask from '../../components/form-components/FormTask';
 
 function CreateTask() {
   const { slug } = useParams();
-  const navigate = useNavigate();
-  const [projectName, setProjectName] = useState(null)
-
-  useEffect(() => {  
-    getProject(slug).then(response => {
-      handleResponse(response, navigate, () => {
-        setProjectName(response.data.name)
-      }, emptyFunction, () => {
-        navigate('/project-not-found')
-      })
-    })
-  }, [slug])
-  
-  if (!projectName) return null;
   return (
-    <div className='wrapper w-full min-h-screen bg-gray-50'>
-      <Header h1_text={`Create task for project "${projectName}"`}/>
+    <div className="wrapper w-full min-h-screen bg-gray-50">
+      <Header title="Create task" buttons={<Button link="/">Home</Button>} />
       <div className="section">
-        <FormTask />
+        <FormTask oldSlug={slug} />
       </div>
     </div>
-  )
+  );
 }
 
-export default CreateTask
+export default CreateTask;

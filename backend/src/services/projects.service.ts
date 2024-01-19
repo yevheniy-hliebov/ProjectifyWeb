@@ -248,7 +248,7 @@ export class ProjectsService {
     }
   }
 
-  async uploadCover(id: string, file: FileDto) {    
+  async uploadCover(id: string, file: FileDto) {
     const errors = validationImage(file, { extensions: this.allowedExtensions, maxImageSize: this.maxImageSize })
     if (errors) {
       this.logger.error(`Error upload project [id: ${id}] cover: Image validation failed`, 'Error: ' + this.objectToString(errors));

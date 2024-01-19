@@ -1,16 +1,17 @@
-import React from 'react'
-import Header from '../../components/Header'
-import FormProject from '../../components/FormProject'
+import React from 'react';
+import Header from '../../components/section-components/Header';
+import Button from '../../components/form-components/Button';
+import FormProject from '../../components/form-components/FormProject';
 
 function CreateProject() {
   return (
-    <div className='wrapper w-full min-h-screen bg-gray-50'>
-      <Header h1_text={'Create project'}/>
+    <div className="wrapper w-full min-h-screen bg-gray-50">
+      <Header title="Create project" buttons={<Button link="/">Home</Button>} />
       <div className="section">
         <FormProject />
       </div>
     </div>
-  )
+  );
 }
 
-export default CreateProject
+export default CreateProject;

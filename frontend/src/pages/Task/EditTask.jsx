@@ -1,45 +1,45 @@
-import React, { useEffect, useState } from 'react'
-import FormTask from '../../components/FormTask'
-import Header from '../../components/Header'
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getProject } from '../../functions/projectAPI';
-import { getTask } from '../../functions/taskApi';
-import { handleResponse } from '../../functions/handleResponse';
-
-const emptyFunction = () => { };
+import Header from '../../components/section-components/Header';
+import Button from '../../components/form-components/Button';
+import FormTask from '../../components/form-components/FormTask';
+import { getTask } from '../../api/tasks';
+import Loading from '../../components/Loading';
 
 function EditTask() {
-  const { slug, number } = useParams();
   const navigate = useNavigate();
-  const [projectName, setProjectName] = useState(null)
-  const [task, setTask] = useState(null)
+  const [taskData, setTaskData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const { slug, number } = useParams();
 
   useEffect(() => {
-    getProject(slug).then(response => {
-      handleResponse(response, navigate, () => {
-        setProjectName(response.data.name)
-        getTask(slug, number).then(response => {
-          handleResponse(response, navigate, () => {
-            setTask(response.data)
-          }, emptyFunction, () => {
-            navigate('/task-not-found')
-          })
-        })
-      }, emptyFunction, () => {
-        navigate('/project-not-found')
-      })
-    })
-  }, [slug, number])
+    getTask(slug, number).then((res) => {
+      if (res?.status === 200) {
+        const { name, description, status, priority, start_date, end_date } = res?.data;
+        setTaskData({ name, description, status, priority, start_date, end_date });
+        setLoading(false);
+      } else if (res?.status === 401) {
+        navigate('/login');
+      } else if (res?.status === 404) {
+        navigate('/404');
+      } else if (res?.status === 500 || !res) {
+        navigate('/500');
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, number]);
 
-  if (!projectName || !task) return null;
   return (
-    <div className='wrapper w-full min-h-screen bg-gray-50'>
-      <Header h1_text={`Create task for project "${projectName}"`} />
+    <div className="wrapper w-full min-h-screen bg-gray-50">
+      <Header title="Edit task" buttons={<Button link="/">Home</Button>} />
       <div className="section">
-        <FormTask taskData={task} isUpdateAction={true} />
+        <Loading loading={loading} />
+        {!loading ? (
+          <FormTask taskData={taskData} isEditTask={true} oldSlug={slug} oldNumber={number} />
+        ) : null}
       </div>
     </div>
-  )
+  );
 }
 
-export default EditTask
+export default EditTask;

@@ -1,73 +1,101 @@
-import React, { useContext, useState } from 'react';
+import { useContext, useState } from 'react';
 import Container from '../../components/Container';
-import Button from '../../components/Button';
+import Input from '../../components/form-components/Input';
 import { Link, useNavigate } from 'react-router-dom';
-import Input from '../../components/Input';
-import { login } from '../../functions/authApi';
+import Button from '../../components/form-components/Button';
+import { login } from '../../api/auth';
 import { AuthContext } from '../../App';
 
+const emptyUser = {
+  username: '',
+  password: ''
+};
+
 function Login() {
-  const [authUser, setAuthUser] = useContext(AuthContext)
   const navigate = useNavigate();
-  const [user, setUser] = useState({
-    username: '',
-    password: ''
-  })
-  const [error, setError] = useState('')
+  const setAuthUser = useContext(AuthContext)[1];
+  const [user, setUser] = useState(emptyUser);
+  const [errors, setErrors] = useState(emptyUser);
 
-  const handleUsername = (e) => {
-    const username = e.target.value;
-    setUser(prevUser => ({
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setUser((prevUser) => ({
       ...prevUser,
-      username: username,
-    }))
-  }
-  const handlePassword = (e) => {
-    const password = e.target.value;
-    setUser(prevUser => ({
-      ...prevUser,
-      password: password,
-    }))
-  }
+      [name]: value
+    }));
+  };
 
-  const handleForm = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const response = await login(user);
-    if (response === undefined) {
-      navigate('/internal-server-error')
-    } else if (response.status === 200) {
-      setAuthUser(response.data)
-      navigate('/');
-    } else {
-      setError(response.data.message);
-    }
-  }
 
-  if (authUser) {
-    navigate('/')
-  }
+    setErrors(emptyUser);
+    if (user?.username !== '' && user?.password !== '') {
+      login(user).then((res) => {
+        if (!res || res.status === 500) {
+          navigate('/500');
+        } else if (res) {
+          if (res.status === 200) {
+            navigate('/');
+            setAuthUser(res.data);
+          } else if (res.status === 400) {
+            setErrors((prevErros) => ({
+              ...prevErros,
+              password: res.data.message
+            }));
+          } else if (res.status === 404) {
+            setErrors((prevErros) => ({
+              ...prevErros,
+              username: res.data.message
+            }));
+          }
+        }
+      });
+    }
+  };
 
   return (
-    <Container className='h-screen flex flex-col items-center justify-center'>
-      <div className="w-full max-w-[460px] p-[30px] bg-gray-100 shadow-[0_3px_10px_rgb(0,0,0,0.2)] rounded-[20px] flex-col justify-center items-center gap-2.5 inline-flex">
-        <form className="w-full flex-col justify-center items-center gap-[15px] flex" onSubmit={handleForm}>
-          <div className="w-full flex-col justify-center items-center gap-[15px] flex">
-            <h2 className="text-black text-[32px] font-bold leading-9">Welcome</h2>
-            <Input label="Username" placeholder="Write the username" inputValue={user.username} onChange={handleUsername} />
-            <Input label="Password" type='password' placeholder="Write the password" inputValue={user.password} onChange={handlePassword} />
+    <Container className="h-screen flex flex-col justify-center items-center">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-[400px] p-[30px] bg-gray-100 rounded-[20px] shadow-[0_3px_10px_rgb(0,0,0,0.5)] flex-col justify-center items-center gap-[15px] inline-flex"
+      >
+        <div className="text-black text-[28px] font-bold leading-9">Welcome</div>
+        <Input
+          label="Username"
+          name="username"
+          placeholder="Enter the username..."
+          inputValue={user.username}
+          onChange={handleChange}
+          error={errors.username}
+        />
+        <Input
+          label="Password"
+          name="password"
+          type="password"
+          placeholder="Enter the password..."
+          inputValue={user.password}
+          onChange={handleChange}
+          error={errors.password}
+        />
+
+        <div className="w-[400px] h-5 justify-center items-center gap-2.5 inline-flex">
+          <div className="text-gray-500 text-sm font-normal leading-tight">
+            Don’t have an account?
           </div>
-          { error.length > 0 && <div className="text-red-500 text-sm font-normal leading-tight">{error}</div> }
-          <div className="self-stretch justify-center items-center gap-2.5 inline-flex">
-            <div className="text-gray-500 text-sm font-normal leading-tight">Don't have an account?</div>
-            <Link to='/register' className="text-gray-500 text-sm font-normal underline leading-tight">Sign Up</Link>
-          </div>
-          <div className="justify-center items-center gap-[15px] inline-flex">
-            <Button color="blue" type='submit'>Log In</Button>
-          </div>
-        </form>
-      </div>
+          <Link
+            to="/register"
+            className="text-gray-500 text-sm font-normal underline leading-tight"
+          >
+            Sign Up
+          </Link>
+        </div>
+
+        <Button type="submit" className="w-[150px]" color="blue">
+          Log In
+        </Button>
+      </form>
     </Container>
-  )
+  );
 }
 
-export default Login
+export default Login;

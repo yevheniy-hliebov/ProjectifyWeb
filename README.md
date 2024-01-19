@@ -56,7 +56,7 @@ $ cd backend
 
 ## Description
 
-To view API documentation on Swagger at [https://api-projectifyweb.up.railway.app/api](api-projectifyweb.up.railway.app/api)
+To view API documentation on Swagger at [https://api-projectifyweb.up.railway.app/api](https://api-projectifyweb.up.railway.app/api)
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.  
 [Nest Documentation](https://docs.nestjs.com/)
