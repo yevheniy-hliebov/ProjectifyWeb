@@ -9,6 +9,17 @@ Develop a fully functional web application for project management, enabling user
 - Authentication: JWT
 - Documentation: Swagger
 
+## Screenshots of the results
+
+<div style="display: flex; justify-content: space-between; gap: 10px">
+    <img src="./screenshots/login-page.png" width="auto" height="200px"/>
+    <img src="./screenshots/register-page.png" width="auto" height="200px"/>
+    <img src="./screenshots/home-page.png" width="auto" height="200px"/>
+    <img src="./screenshots/project-page.png" width="auto" height="200px"/>
+    <img src="./screenshots/task-page.png" width="auto" height="200px"/>
+</div>
+
+
 ## Basic Level:
 
 **Client-Side:**
